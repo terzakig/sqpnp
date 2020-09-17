@@ -21,8 +21,10 @@ or, for a *release* build,
 
 ``cmake .. -DCMAKE_BUILD_TYPE=Release``
 
-The latter will allow for more accurate timing of average execution time.Finally,
+The latter will allow for more accurate timing of average execution time.Finally build everything:
+
 ``make``
 
 To run the example, once in the ``build`` directory,
+
 ``./example/sqpnp_example``  
