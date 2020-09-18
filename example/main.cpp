@@ -33,8 +33,9 @@ void GenerateSyntheticPoints(int n,
     // Generate a rotation matrix near the origin
     cv::Vec<double, 3> psi;// = mvnrnd([0; 0; 0], 0.001 * eye(3))';
     
-    static std::default_random_engine generator;
-    double sigma_psi = 0.03;
+    static std::random_device r;
+    static std::default_random_engine generator(r());
+    double sigma_psi = 0.01;
     std::normal_distribution<double> psi_noise(0.0, sigma_psi);
     psi[0] = psi_noise(generator);
     psi[1] = psi_noise(generator);
@@ -90,9 +91,9 @@ void GenerateSyntheticPoints(int n,
 
 int main()
 {
-  int N = 15;
-  int n = 14;
-  double std_pixels = 3;
+  int N = 5;
+  int n = 7;
+  double std_pixels = 2;
   
   std::vector<std::vector<cv::Point3_<double>>> vpoints;  
   std::vector<std::vector<cv::Point_<double>>> vprojections;
@@ -120,7 +121,7 @@ int main()
   
   auto start = std::chrono::steady_clock::now();
   double max_sq_error = 0;
-  std::vector<const sqpnp::SQPSolution*> psolutions;
+  std::vector<sqpnp::SQPSolution> solutions;
   for (int i = 0; i < N; i++)
   {
     sqpnp::PnPSolver solver(vpoints.at(i), vnoisy_projections.at(i));
@@ -128,7 +129,7 @@ int main()
     {
       solver.Solve();
       if ( max_sq_error < solver.SolutionPtr(0)->sq_error ) max_sq_error = solver.SolutionPtr(0)->sq_error;
-      psolutions.push_back(solver.SolutionPtr(0));
+      solutions.push_back(*solver.SolutionPtr(0));
     }
   }
   
@@ -136,7 +137,7 @@ int main()
   
   for (int i = 0; i < N; i++)
   {
-    std::cout << i << "-th Solution : " << *psolutions.at(i);
+    std::cout << i << "-th Solution : " << solutions.at(i);
     std::cout << i << "-th Rt : " << vRt.at(i) << std::endl;
     std::cout << i << "-th tt : " << vtt.at(i) << "\n\n";
   }

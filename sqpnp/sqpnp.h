@@ -18,9 +18,6 @@
 #include <assert.h>
 #include <iostream>
 
-#include <Eigen/SparseCholesky> 
-#include <Eigen/Sparse>
-
 namespace sqpnp
 {
   
@@ -190,6 +187,7 @@ namespace sqpnp
     
     // Solve the PnP
     bool Solve();
+    void H(int arg1, int arg2);
     
   private:
     std::vector<_Projection> projections_;
@@ -293,9 +291,10 @@ namespace sqpnp
     }
     
     //
-    // Compute the 3D null space and 6D normal space of the constraint Jacobian at a 9D vector r (not necessarilly a rotation-yet it should be rank-3)
+    // Compute the 3D null space (N) and 6D normal space (H) of the constraint Jacobian 
+    // at a 9D vector r (not necessarilly a rotation-yet it should be rank-3)
     static void RowAndNullSpace(const Eigen::Vector<double, 9>& r, 
-				      Eigen::Matrix<double, 9, 6>& Q, 
+				      Eigen::Matrix<double, 9, 6>& H, 
 				      Eigen::Matrix<double, 9, 3>& N,
 				      Eigen::Matrix<double, 6, 6>& K,
 				const double& norm_threhsold = 0.1 );
