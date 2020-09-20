@@ -142,20 +142,17 @@ namespace sqpnp
       Q(2, 0) = -sum_x; Q(2, 1) = -sum_y; Q(2, 2) = sum_x2_plus_y2; 
       
       // Qinv = inv( Q ) = inv( Sum( Qi) )
-      double inv_detQ = 1.0 / ( n*( n*sum_x2_plus_y2 - sum_y*sum_y - sum_x*sum_x ) );
-      if ( inv_detQ < 1e-6 ) 
+      double inv_n = 1.0 / n;
+      double detQ = n*( n*sum_x2_plus_y2 - sum_y*sum_y - sum_x*sum_x );
+      double point_coordinate_variance = detQ * inv_n * inv_n * inv_n;
+      if ( point_coordinate_variance < parameters_.point_variance_threshold ) 
       {
 	flag_valid_ = false;
 	return;
       }
       
       Eigen::Matrix<double, 3, 3> Qinv;
-      Qinv(0, 0) =  inv_detQ * ( n*sum_x2_plus_y2 - sum_y*sum_y ); 
-      Qinv(0, 1) = Qinv(1, 0) = inv_detQ * sum_x*sum_y;
-      Qinv(0, 2) = Qinv(2, 0) = inv_detQ * n*sum_x;
-      Qinv(1, 1) = inv_detQ * ( n*sum_x2_plus_y2 - sum_x*sum_x );
-      Qinv(1, 2) = Qinv(2, 1) = inv_detQ * n*sum_y;
-      Qinv(2, 2) = inv_detQ * n*n;
+      InvertSymmetric3x3(Q, Qinv);
       
       // Compute P = -inv( Sum(Qi) ) * Sum( Qi*Ai ) = -Qinv * QA
       P_ = -Qinv * QA;
@@ -167,13 +164,9 @@ namespace sqpnp
         
       U_ = svd.matrixU();
       s_ = svd.singularValues();
-      if ( s_[0] < 1e-7 ) 
-      {
-	flag_valid_ = false;
-	return;
-      }
+      
       // Find dimension of null space
-      while (s_[7 - num_null_vectors_] / s_[0] < _parameters.rank_tolerance) num_null_vectors_++;
+      while (s_[7 - num_null_vectors_] < _parameters.rank_tolerance) num_null_vectors_++;
       // Dimension of null space of Omega must be <= 6
       if (++num_null_vectors_ > 6) 
       {
@@ -181,7 +174,6 @@ namespace sqpnp
       }
       
       // Point mean 
-      double inv_n = 1.0 / n;
       point_mean_ << sum_X*inv_n, sum_Y*inv_n, sum_Z*inv_n;
     }
     

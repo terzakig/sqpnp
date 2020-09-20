@@ -20,6 +20,8 @@ namespace sqpnp
   const double SolverParameters::DEFAULT_ORTHOGONALITY_SQUARED_ERROR_THRESHOLD = 1e-8;
   const double SolverParameters::DEFAULT_EQUAL_VECTORS_SQUARED_DIFF = 1e-10;
   const double SolverParameters::DEFAULT_EQUAL_SQUARED_ERRORS_DIFF = 1e-6;
+  const double SolverParameters::DEFAULT_POINT_VARIANCE_THRESHOLD = 1e-5;
+  
     
   const double PnPSolver::SQRT3 = std::sqrt(3);
   

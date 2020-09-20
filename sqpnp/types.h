@@ -114,6 +114,7 @@ namespace sqpnp
     static const double DEFAULT_ORTHOGONALITY_SQUARED_ERROR_THRESHOLD;
     static const double DEFAULT_EQUAL_VECTORS_SQUARED_DIFF;
     static const double DEFAULT_EQUAL_SQUARED_ERRORS_DIFF;
+    static const double DEFAULT_POINT_VARIANCE_THRESHOLD;
     
     double rank_tolerance;
     double sqp_squared_tolerance;
@@ -122,6 +123,7 @@ namespace sqpnp
     double orthogonality_squared_error_threshold;  
     double equal_vectors_squared_diff;
     double equal_squared_errors_diff;
+    double point_variance_threshold;
     
     inline SolverParameters(const double& _rank_tolerance = DEFAULT_RANK_TOLERANCE, 
 			    const double& _sqp_squared_tolerance = DEFAULT_SQP_SQUARED_TOLERANCE,
@@ -129,14 +131,16 @@ namespace sqpnp
 			    const int _sqp_max_iteration = DEFAULT_SQP_MAX_ITERATION, 
 			    const double& _orthogonality_squared_error_threshold = DEFAULT_ORTHOGONALITY_SQUARED_ERROR_THRESHOLD,
 		            const double& _equal_vectors_squared_diff = DEFAULT_EQUAL_VECTORS_SQUARED_DIFF,
-			    const double& _equal_squared_errors_diff = DEFAULT_EQUAL_SQUARED_ERRORS_DIFF
+			    const double& _equal_squared_errors_diff = DEFAULT_EQUAL_SQUARED_ERRORS_DIFF,
+			    const double& _point_variance_threshold = DEFAULT_POINT_VARIANCE_THRESHOLD
 			    ) : rank_tolerance(_rank_tolerance),
 				sqp_squared_tolerance(_sqp_squared_tolerance),
 				sqp_det_threshold(_sqp_det_threshold),
 				sqp_max_iteration(_sqp_max_iteration),
 				orthogonality_squared_error_threshold(_orthogonality_squared_error_threshold),
 				equal_vectors_squared_diff(_equal_vectors_squared_diff),
-				equal_squared_errors_diff(_equal_squared_errors_diff)
+				equal_squared_errors_diff(_equal_squared_errors_diff),
+				point_variance_threshold(_point_variance_threshold)
   {}
   
   };

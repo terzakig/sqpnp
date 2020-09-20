@@ -35,7 +35,7 @@ void GenerateSyntheticPoints(int n,
     
     static std::random_device r;
     static std::default_random_engine generator(r());
-    double sigma_psi = 0.01;
+    double sigma_psi = 0.1;
     std::normal_distribution<double> psi_noise(0.0, sigma_psi);
     psi[0] = psi_noise(generator);
     psi[1] = psi_noise(generator);
@@ -91,9 +91,9 @@ void GenerateSyntheticPoints(int n,
 
 int main()
 {
-  int N = 5;
-  int n = 7;
-  double std_pixels = 2;
+  int N = 105;
+  int n = 10;
+  double std_pixels = sqrt(7);
   
   std::vector<std::vector<cv::Point3_<double>>> vpoints;  
   std::vector<std::vector<cv::Point_<double>>> vprojections;
