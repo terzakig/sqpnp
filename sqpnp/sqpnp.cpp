@@ -24,7 +24,7 @@ namespace sqpnp
   
     
   const double PnPSolver::SQRT3 = std::sqrt(3);
-  const std::function<void(const Eigen::Vector<double, 9>&, Eigen::Vector<double, 9>&)> PnPSolver::NearestRotationMatrix = NearestRotationMatrix_FOAM; //NearestRotationMatrix_SVD;
+  const std::function<void(const Eigen::Matrix<double, 9, 1>&, Eigen::Matrix<double, 9, 1>&)> PnPSolver::NearestRotationMatrix = NearestRotationMatrix_FOAM; //NearestRotationMatrix_SVD;
   
   
   void PnPSolver::HandleSolution(SQPSolution& solution, double& min_sq_error)
@@ -81,7 +81,7 @@ namespace sqpnp
     for (int i = 9 - num_eigen_points; i < 9; i++) 
     {
       // NOTE: No need to scale by sqrt(3) here, but better be there for other computations (i.e., orthogonality test)
-      const Eigen::Vector<double, 9> e = SQRT3 * Eigen::Map<Eigen::Vector<double, 9>>( U_.block<9, 1>(0, i).data() );
+      const Eigen::Matrix<double, 9, 1> e = SQRT3 * Eigen::Map<Eigen::Matrix<double, 9, 1>>( U_.block<9, 1>(0, i).data() );
       double orthogonality_sq_error = OrthogonalityError(e);
       // Find nearest rotation vector
       SQPSolution solution[2];
@@ -113,7 +113,7 @@ namespace sqpnp
     {      
       int index = 9 - num_eigen_points - c;
 
-      const Eigen::Vector<double, 9> e = Eigen::Map<Eigen::Vector<double, 9>>( U_.block<9, 1>(0, index).data() );
+      const Eigen::Matrix<double, 9, 1> e = Eigen::Map<Eigen::Matrix<double, 9, 1>>( U_.block<9, 1>(0, index).data() );
       SQPSolution solution[2];
       
       for (int k = 0; k < 2; k++)
@@ -135,12 +135,12 @@ namespace sqpnp
   
   //
   // Run sequential quadratic programming on orthogonal matrices
-  SQPSolution PnPSolver::RunSQP(const Eigen::Vector<double, 9>& r0)
+  SQPSolution PnPSolver::RunSQP(const Eigen::Matrix<double, 9, 1>& r0)
   {
-    Eigen::Vector<double, 9> r = r0;
+    Eigen::Matrix<double, 9, 1> r = r0;
     
     double delta_squared_norm = std::numeric_limits<double>::max();
-    Eigen::Vector<double, 9> delta;
+    Eigen::Matrix<double, 9, 1> delta;
     int step = 0;
     
     while ( delta_squared_norm > parameters_.sqp_squared_tolerance && step++ < parameters_.sqp_max_iteration )
@@ -175,7 +175,7 @@ namespace sqpnp
   
   //
   // Solve the SQP system efficiently
-  void PnPSolver::SolveSQPSystem(const Eigen::Vector<double, 9>& r, Eigen::Vector<double, 9>& delta )
+  void PnPSolver::SolveSQPSystem(const Eigen::Matrix<double, 9, 1>& r, Eigen::Matrix<double, 9, 1>& delta )
   {
     double sqnorm_r1 = r[0]*r[0] + r[1]*r[1] + r[2]*r[2], 
 	   sqnorm_r2 = r[3]*r[3] + r[4]*r[4] + r[5]*r[5], 
@@ -202,10 +202,10 @@ namespace sqpnp
     //					           -r1'*r2; 
     //						   -r2'*r3; 
     //						   -r1'*r3 ];
-    Eigen::Vector<double, 6> g; 
+    Eigen::Matrix<double, 6, 1> g; 
     g[0] = 1 - sqnorm_r1; g[1] = 1 - sqnorm_r2; g[2] = 1 - sqnorm_r3; g[3] = -dot_r1r2; g[4] = -dot_r2r3; g[5] = -dot_r1r3;
       
-    Eigen::Vector<double, 6> x;
+    Eigen::Matrix<double, 6, 1> x;
     x[0] = g[0] / JH(0, 0);
     x[1] = g[1] / JH(1, 1);
     x[2] = g[2] / JH(2, 2);
@@ -223,7 +223,7 @@ namespace sqpnp
     Eigen::Matrix<double, 3, 3> W = NtOmega * N, Winv;
     InvertSymmetric3x3(W, Winv); // NOTE: This maybe also analytical with Eigen, but hey...
     
-    Eigen::Vector<double, 3> y = -Winv * NtOmega * ( delta + r );
+    Eigen::Matrix<double, 3, 1> y = -Winv * NtOmega * ( delta + r );
     
     // FINALLY, accumulate delta with component in tangent space (delta_n)
     delta += N*y;
@@ -234,7 +234,7 @@ namespace sqpnp
   // Compute the 3D null space (N) and 6D normal space (H) of the constraint Jacobian at a 9D vector r 
   // (r is not necessarilly a rotation but it must represent an rank-3 matrix )
   // NOTE: K is lower-triangular, so upper triangle may contain trash (is not filled by the function)...
-  void PnPSolver::RowAndNullSpace(const Eigen::Vector<double, 9>& r, 
+  void PnPSolver::RowAndNullSpace(const Eigen::Matrix<double, 9, 1>& r, 
 				    Eigen::Matrix<double, 9, 6>& H, // Row space 
 				    Eigen::Matrix<double, 9, 3>& N, // Null space
 				    Eigen::Matrix<double, 6, 6>& K,  // J*Q (J - Jacobian of constraints)

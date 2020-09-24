@@ -28,12 +28,12 @@ namespace sqpnp
   public:
     
     static const double SQRT3;
-    static const std::function<void(const Eigen::Vector<double, 9>&, Eigen::Vector<double, 9>&)> NearestRotationMatrix;
+    static const std::function<void(const Eigen::Matrix<double, 9, 1>&, Eigen::Matrix<double, 9, 1>&)> NearestRotationMatrix;
     
     bool IsValid() const { return flag_valid_; }
     const Eigen::Matrix<double, 9, 9>& Omega() const { return Omega_; }
     const Eigen::Matrix<double, 9, 9>& EigenVectors() const { return U_; }
-    const Eigen::Vector<double, 9>& EigenValues() const { return s_; }
+    const Eigen::Matrix<double, 9, 1>& EigenValues() const { return s_; }
     const int NullSpaceDimension() const { return num_null_vectors_; }
     const int NumberOfSolutions() const { return num_solutions_; }
     const SQPSolution* const SolutionPtr(const int index) const 
@@ -201,10 +201,10 @@ namespace sqpnp
     
     Eigen::Matrix<double, 9, 9> Omega_;
     
-    Eigen::Vector<double, 9> s_;
+    Eigen::Matrix<double, 9, 1> s_;
     Eigen::Matrix<double, 9, 9> U_;
     Eigen::Matrix<double, 3, 9> P_;
-    Eigen::Vector<double, 3> point_mean_; // For the positive depth test
+    Eigen::Matrix<double, 3, 1> point_mean_; // For the positive depth test
     
     int num_null_vectors_;
     
@@ -215,11 +215,11 @@ namespace sqpnp
     
     //
     // Run sequential quadratic programming with orthogonality constraints
-    SQPSolution RunSQP(const Eigen::Vector<double, 9>& r0);
+    SQPSolution RunSQP(const Eigen::Matrix<double, 9, 1>& r0);
     
     //
     // Solve the SQP system efficiently.
-    void SolveSQPSystem(const Eigen::Vector<double, 9>& r, Eigen::Vector<double, 9>& delta );
+    void SolveSQPSystem(const Eigen::Matrix<double, 9, 1>& r, Eigen::Matrix<double, 9, 1>& delta );
     
     // Handle a newly found solution and populate the list of solutions
     void HandleSolution(SQPSolution& solution, double& min_sq_error);
@@ -237,7 +237,7 @@ namespace sqpnp
     
     //
     // Determinant of 3x3 matrix stored as a 9x1 vector in a vector in ROW-MAJOR order
-    inline static double Determinant9x1(const Eigen::Vector<double, 9>& r)
+    inline static double Determinant9x1(const Eigen::Matrix<double, 9, 1>& r)
     {
       return r[0]*r[4]*r[8] + r[1]*r[5]*r[6] + r[2]*r[3]*r[7] - r[6]*r[4]*r[2] - r[7]*r[5]*r[0] - r[8]*r[3]*r[1];
     }
@@ -276,13 +276,16 @@ namespace sqpnp
     
     // Simple SVD - based nearest rotation matrix. Argument should be a ROW-MAJOR matrix representation.
     // Returns a ROW-MAJOR vector representation of the nearest rotation matrix.
-    inline static void NearestRotationMatrix_SVD(const Eigen::Vector<double, 9>& e, Eigen::Vector<double, 9>& r)
+    inline static void NearestRotationMatrix_SVD(const Eigen::Matrix<double, 9, 1>& e, Eigen::Matrix<double, 9, 1>& r)
     {
-      const Eigen::Matrix<double, 3, 3> E = e.reshaped(3, 3); 
+      //const Eigen::Matrix<double, 3, 3> E = e.reshaped(3, 3); 
+      const Eigen::Map<const Eigen::Matrix<double, 3, 3>> E(e.data(), 3, 3);
       Eigen::JacobiSVD<Eigen::Matrix<double, 3, 3>> svd( E, Eigen::ComputeFullU | Eigen::ComputeFullV );
       double detUV = Determinant3x3(svd.matrixU()) * Determinant3x3(svd.matrixV());
       // so we return back a row-major vector representation of the orthogonal matrix
-      r = ( svd.matrixU() * Eigen::Vector<double, 3>({1, 1, detUV}).asDiagonal() * svd.matrixV().transpose() ).reshaped(9, 1);
+      //r = ( svd.matrixU() * Eigen::Matrix<double, 3, 1>({1, 1, detUV}).asDiagonal() * svd.matrixV().transpose() ).reshaped(9, 1);
+      Eigen::Matrix<double, 3, 3> R = svd.matrixU() * Eigen::Matrix<double, 3, 1>({1, 1, detUV}).asDiagonal() * svd.matrixV().transpose();
+      r = Eigen::Map<Eigen::Matrix<double, 9, 1>>(R.data(), 9, 1);
     }
 
     // faster nearest rotation computation based on FOAM (see: http://users.ics.forth.gr/~lourakis/publ/2018_iros.pdf )
@@ -384,7 +387,7 @@ namespace sqpnp
     //
     // Produce a distance from being orthogonal for a random 3x3 matrix
     // Matrix is provided as a vector
-    inline static double OrthogonalityError(const Eigen::Vector<double, 9>& a)
+    inline static double OrthogonalityError(const Eigen::Matrix<double, 9, 1>& a)
     {
       double sq_norm_a1 = a[0]*a[0] + a[1]*a[1] + a[2]*a[2],
              sq_norm_a2 = a[3]*a[3] + a[4]*a[4] + a[5]*a[5],
@@ -400,7 +403,7 @@ namespace sqpnp
     //
     // Compute the 3D null space (N) and 6D normal space (H) of the constraint Jacobian 
     // at a 9D vector r (not necessarilly a rotation-yet it should be rank-3)
-    static void RowAndNullSpace(const Eigen::Vector<double, 9>& r, 
+    static void RowAndNullSpace(const Eigen::Matrix<double, 9, 1>& r, 
 				      Eigen::Matrix<double, 9, 6>& H, 
 				      Eigen::Matrix<double, 9, 3>& N,
 				      Eigen::Matrix<double, 6, 6>& K,

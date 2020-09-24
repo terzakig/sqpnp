@@ -28,12 +28,12 @@ namespace sqpnp
   // Euclidean projection
   struct _Projection
   {
-    Eigen::Vector<double, 2> vector;
+    Eigen::Matrix<double, 2, 1> vector;
     
-    inline _Projection() : vector(Eigen::Vector<double, 2>(0, 0)) {}
+    inline _Projection() : vector(Eigen::Matrix<double, 2, 1>(0, 0)) {}
     
     template<typename P>
-    inline _Projection(const P& _x, const P& _y) : vector(Eigen::Vector<double, 2>(_x, _y)) {}
+    inline _Projection(const P& _x, const P& _y) : vector(Eigen::Matrix<double, 2, 1>(_x, _y)) {}
     
     template <class Proj>
     inline _Projection(const Proj& _projection) { *this = _projection; }
@@ -56,7 +56,7 @@ namespace sqpnp
     #endif
     
     template <typename P>
-    _Projection& operator =(const Eigen::Vector<P, 2>& _projection) 
+    _Projection& operator =(const Eigen::Matrix<P, 2, 1>& _projection) 
     {
 	vector = _projection;
 	return *this;
@@ -67,12 +67,12 @@ namespace sqpnp
   // 3D point
   struct _Point
   {
-    Eigen::Vector<double, 3> vector;
+    Eigen::Matrix<double, 3, 1> vector;
     
-    inline _Point() : vector(Eigen::Vector<double, 3>(0, 0, 0)) {}
+    inline _Point() : vector(Eigen::Matrix<double, 3, 1>(0, 0, 0)) {}
     
     template<typename P>
-    inline _Point( const P& _x, const P& _y, const P& _z ) : vector(Eigen::Vector<double, 3>(_x, _y, _z)) {}
+    inline _Point( const P& _x, const P& _y, const P& _z ) : vector(Eigen::Matrix<double, 3, 1>(_x, _y, _z)) {}
     
     template <class Pt>
     inline _Point(const Pt& _point) { *this = _point; }
@@ -97,7 +97,7 @@ namespace sqpnp
     #endif
     
     template <typename P>
-    _Point& operator =(const Eigen::Vector<P, 3>& _point) 
+    _Point& operator =(const Eigen::Matrix<P, 3, 1>& _point) 
     {
 	vector = _point;
 	return *this;
@@ -147,9 +147,9 @@ namespace sqpnp
   
   struct SQPSolution
   {
-    Eigen::Vector<double, 9> r; // Actual matrix upon convergence
-    Eigen::Vector<double, 9> r_hat; // "Clean" (nearest) rotation matrix 
-    Eigen::Vector<double, 3> t;
+    Eigen::Matrix<double, 9, 1> r; // Actual matrix upon convergence
+    Eigen::Matrix<double, 9, 1> r_hat; // "Clean" (nearest) rotation matrix 
+    Eigen::Matrix<double, 3, 1> t;
     int num_iterations;
     double sq_error;
     
