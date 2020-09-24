@@ -24,6 +24,7 @@ namespace sqpnp
   
     
   const double PnPSolver::SQRT3 = std::sqrt(3);
+  const std::function<void(const Eigen::Vector<double, 9>&, Eigen::Vector<double, 9>&)> PnPSolver::NearestRotationMatrix = NearestRotationMatrix_FOAM; //NearestRotationMatrix_SVD;
   
   
   void PnPSolver::HandleSolution(SQPSolution& solution, double& min_sq_error)
@@ -88,7 +89,7 @@ namespace sqpnp
       // Avoid SQP if e is orthogonal
       if ( orthogonality_sq_error < parameters_.orthogonality_squared_error_threshold ) 
       {
-	 solution[0].r_hat = Determinant3x3(e) * e;
+	 solution[0].r_hat = Determinant9x1(e) * e;
 	 solution[0].t = P_*solution[0].r_hat;
 	 solution[0].num_iterations = 0;
 	 
@@ -153,7 +154,7 @@ namespace sqpnp
     solution.num_iterations = step;
     solution.r = r;
     // clear the estimate and/or flip the matrix sign if necessary
-    double det_r = Determinant3x3(solution.r);
+    double det_r = Determinant9x1(solution.r);
     if (det_r < 0) 
     {
       solution.r = -r;
