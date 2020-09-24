@@ -8,6 +8,7 @@
 
 #include <vector>
 #include <iostream>
+#include <chrono>
 
 #include <types.h>
 #include <sqpnp.h>
@@ -49,6 +50,8 @@ int main()
 #endif
   };
 
+  auto start = std::chrono::high_resolution_clock::now();
+
   std::vector<sqpnp::_Point> _3dpoints(n);
   std::vector<sqpnp::_Projection> _projections(n);
 
@@ -61,6 +64,11 @@ int main()
   }
 
   sqpnp::PnPSolver solver(_3dpoints, _projections, n);
+
+  auto stop = std::chrono::high_resolution_clock::now();
+  auto duration = std::chrono::duration_cast<std::chrono::microseconds>(stop - start);
+  std::cout << "Time taken by SQPnP: " << duration.count() << " microseconds" << std::endl << std::endl;
+
   if(solver.IsValid()){
     solver.Solve();
     std::cout << solver.NumberOfSolutions() << " solution(s)"<< std::endl;
