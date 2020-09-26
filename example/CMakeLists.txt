@@ -18,12 +18,13 @@ if (OpenCV_FOUND)
 list(APPEND INCLUDE_DIRS ${OpenCV_INCLUDE_DIRS})
 list(APPEND LIBS ${OpenCV_LIBS})
 add_compile_definitions(HAVE_OPENCV)
+set(sources main.cpp )
+else(OpenCV_FOUND)
+set(sources main_plain.cpp )
 endif(OpenCV_FOUND)
 
 # Append list of libs with SQPnP (static library)
 list( APPEND LIBS SQPnP )
-
-set(sources main.cpp )
 
 add_executable(sqpnp_example ${sources})
 
