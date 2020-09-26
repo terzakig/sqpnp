@@ -120,7 +120,7 @@ int main()
   }
   
   auto start = std::chrono::steady_clock::now();
-  double max_sq_error = 0;
+  double max_sq_error = 0, max_sq_proj_error = 0;
   std::vector<sqpnp::SQPSolution> solutions;
   for (int i = 0; i < N; i++)
   {
@@ -128,7 +128,11 @@ int main()
     if (solver.IsValid() ) 
     {
       solver.Solve();
-      if ( max_sq_error < solver.SolutionPtr(0)->sq_error ) max_sq_error = solver.SolutionPtr(0)->sq_error;
+      if ( max_sq_error < solver.SolutionPtr(0)->sq_error ) 
+      {
+	   max_sq_error = solver.SolutionPtr(0)->sq_error;
+           max_sq_proj_error = solver.AverageSquaredProjectionErrors().at(0);
+      }
       solutions.push_back(*solver.SolutionPtr(0));
     }
   }
@@ -145,5 +149,7 @@ int main()
   auto diff = finish - start;
   std::cout << " Average execution time : " << std::chrono::duration_cast<std::chrono::microseconds> (diff).count() / N << std::endl;
   std::cout << " Maximum squared error : " << max_sq_error << std::endl;
+  std::cout << " Maximum average squared projection error : " << max_sq_proj_error << std::endl;
+  
   return 1;
 }

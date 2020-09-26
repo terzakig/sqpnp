@@ -42,6 +42,19 @@ namespace sqpnp
     }
     
     //
+    // Return average reprojection errors
+    inline std::vector<double> AverageSquaredProjectionErrors() const
+    {
+      std::vector<double> avg_errors;;
+      avg_errors.reserve(num_solutions_);
+      for (int i = 0; i < num_solutions_; i++)
+      {
+	avg_errors.emplace_back( AverageSquaredProjectionError(i) );
+      }
+      return avg_errors;
+    }
+
+    //
     // Constructor (initializes Omega and P and U, s, i.e. the decomposition of Omega)
     template <class Point3D, class Projection2D>
     inline PnPSolver(const std::vector<Point3D>& _3dpoints, 
@@ -129,15 +142,6 @@ namespace sqpnp
 				   Omega_(4, 4) = Omega_(1, 1); Omega_(4, 5) = Omega_(1, 2);
 								Omega_(5, 5) = Omega_(2, 2);
       // Fill lower triangle of Omega
-      /*
-      for (int r = 0; r < 9; r++)
-      {
-        for (int c = 0; c < r; c++)
-        {
-          Omega_(r, c) = Omega_(c, r);
-        }
-      }
-      */
       Omega_(1, 0) = Omega_(0, 1);
       Omega_(2, 0) = Omega_(0, 2); Omega_(2, 1) = Omega_(1, 2);
       Omega_(3, 0) = Omega_(0, 3); Omega_(3, 1) = Omega_(1, 3); Omega_(3, 2) = Omega_(2, 3);
@@ -223,7 +227,27 @@ namespace sqpnp
     
     // Handle a newly found solution and populate the list of solutions
     void HandleSolution(SQPSolution& solution, double& min_sq_error);
-    
+	
+    //
+    // Average Squared Projection Error of a given Solution
+    inline double AverageSquaredProjectionError(const int index) const
+    {
+      double avg = 0;
+      const auto& r = solutions_[index].r_hat;
+      const auto& t = solutions_[index].t;
+      
+      for (int i = 0; i < points_.size(); i++)
+      {
+	double Xc     =       r[0]*points_.at(i).vector[0] + r[1]*points_.at(i).vector[1] + r[2]*points_.at(i).vector[2] + t[0], 
+	       Yc     =       r[3]*points_.at(i).vector[0] + r[4]*points_.at(i).vector[1] + r[5]*points_.at(i).vector[2] + t[1], 
+	       inv_Zc = 1 / ( r[6]*points_.at(i).vector[0] + r[7]*points_.at(i).vector[1] + r[8]*points_.at(i).vector[2] + t[2] );
+	avg += ( Xc*inv_Zc - projections_.at(i).vector[0] ) * ( Xc*inv_Zc - projections_.at(i).vector[0] ) +
+	       ( Yc*inv_Zc - projections_.at(i).vector[1] ) * ( Yc*inv_Zc - projections_.at(i).vector[1] );
+      }
+      
+      return avg / points_.size();
+    }    
+
     //
     // Test cheirality for a given solution
     inline bool TestPositiveDepth(const SQPSolution& solution)
