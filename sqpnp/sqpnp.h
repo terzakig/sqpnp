@@ -28,7 +28,6 @@ namespace sqpnp
   public:
     
     static const double SQRT3;
-    static const std::function<void(const Eigen::Matrix<double, 9, 1>&, Eigen::Matrix<double, 9, 1>&)> NearestRotationMatrix;
     
     bool IsValid() const { return flag_valid_; }
     const Eigen::Matrix<double, 9, 9>& Omega() const { return Omega_; }
@@ -191,6 +190,16 @@ namespace sqpnp
       
       // Point mean 
       point_mean_ << sum_X*inv_n, sum_Y*inv_n, sum_Z*inv_n;
+      
+      // Assign nearest rotation method
+      if ( parameters_.nearest_rotation_method == NearestRotationMethod::FOAM )
+      {
+	NearestRotationMatrix = NearestRotationMatrix_FOAM;
+      } 
+      else // if ( parameters_.nearest_rotation_method == NearestRotationMethod::SVD )
+      {
+	NearestRotationMatrix = NearestRotationMatrix_SVD;
+      }
     }
     
     // Solve the PnP
@@ -216,6 +225,9 @@ namespace sqpnp
     
     SQPSolution solutions_[18];
     int num_solutions_;
+    
+    // Nearest rotration matrix function. By default, the FOAM method
+    std::function<void(const Eigen::Matrix<double, 9, 1>&, Eigen::Matrix<double, 9, 1>&)> NearestRotationMatrix;
     
     //
     // Run sequential quadratic programming with orthogonality constraints
@@ -307,7 +319,6 @@ namespace sqpnp
       Eigen::JacobiSVD<Eigen::Matrix<double, 3, 3>> svd( E, Eigen::ComputeFullU | Eigen::ComputeFullV );
       double detUV = Determinant3x3(svd.matrixU()) * Determinant3x3(svd.matrixV());
       // so we return back a row-major vector representation of the orthogonal matrix
-      //r = ( svd.matrixU() * Eigen::Matrix<double, 3, 1>({1, 1, detUV}).asDiagonal() * svd.matrixV().transpose() ).reshaped(9, 1);
       Eigen::Matrix<double, 3, 3> R = svd.matrixU() * Eigen::Matrix<double, 3, 1>({1, 1, detUV}).asDiagonal() * svd.matrixV().transpose();
       r = Eigen::Map<Eigen::Matrix<double, 9, 1>>(R.data(), 9, 1);
     }

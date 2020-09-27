@@ -17,6 +17,7 @@ namespace sqpnp
   const double SolverParameters::DEFAULT_RANK_TOLERANCE = 1e-7;
   const double SolverParameters::DEFAULT_SQP_SQUARED_TOLERANCE = 1e-10;
   const double SolverParameters::DEFAULT_SQP_DET_THRESHOLD = 1.001;
+  const NearestRotationMethod SolverParameters::DEFAULT_NEAREST_ROTATION_METHOD = NearestRotationMethod::FOAM;
   const double SolverParameters::DEFAULT_ORTHOGONALITY_SQUARED_ERROR_THRESHOLD = 1e-8;
   const double SolverParameters::DEFAULT_EQUAL_VECTORS_SQUARED_DIFF = 1e-10;
   const double SolverParameters::DEFAULT_EQUAL_SQUARED_ERRORS_DIFF = 1e-6;
@@ -24,7 +25,6 @@ namespace sqpnp
   
     
   const double PnPSolver::SQRT3 = std::sqrt(3);
-  const std::function<void(const Eigen::Matrix<double, 9, 1>&, Eigen::Matrix<double, 9, 1>&)> PnPSolver::NearestRotationMatrix = NearestRotationMatrix_FOAM; //NearestRotationMatrix_SVD;
   
   
   void PnPSolver::HandleSolution(SQPSolution& solution, double& min_sq_error)

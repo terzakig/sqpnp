@@ -105,12 +105,15 @@ namespace sqpnp
 
   };
   
+  enum class NearestRotationMethod { FOAM, SVD };
+  
   struct SolverParameters
   {
     static const double DEFAULT_RANK_TOLERANCE;
     static const double DEFAULT_SQP_SQUARED_TOLERANCE;
     static const double DEFAULT_SQP_DET_THRESHOLD;
     static const int DEFAULT_SQP_MAX_ITERATION = 15;
+    static const NearestRotationMethod DEFAULT_NEAREST_ROTATION_METHOD;
     static const double DEFAULT_ORTHOGONALITY_SQUARED_ERROR_THRESHOLD;
     static const double DEFAULT_EQUAL_VECTORS_SQUARED_DIFF;
     static const double DEFAULT_EQUAL_SQUARED_ERRORS_DIFF;
@@ -120,6 +123,7 @@ namespace sqpnp
     double sqp_squared_tolerance;
     double sqp_det_threshold;
     int sqp_max_iteration;
+    NearestRotationMethod nearest_rotation_method;
     double orthogonality_squared_error_threshold;  
     double equal_vectors_squared_diff;
     double equal_squared_errors_diff;
@@ -129,6 +133,7 @@ namespace sqpnp
 			    const double& _sqp_squared_tolerance = DEFAULT_SQP_SQUARED_TOLERANCE,
 			    const double& _sqp_det_threshold = DEFAULT_SQP_DET_THRESHOLD,
 			    const int _sqp_max_iteration = DEFAULT_SQP_MAX_ITERATION, 
+			    const NearestRotationMethod& _nearest_rotation_method = DEFAULT_NEAREST_ROTATION_METHOD,
 			    const double& _orthogonality_squared_error_threshold = DEFAULT_ORTHOGONALITY_SQUARED_ERROR_THRESHOLD,
 		            const double& _equal_vectors_squared_diff = DEFAULT_EQUAL_VECTORS_SQUARED_DIFF,
 			    const double& _equal_squared_errors_diff = DEFAULT_EQUAL_SQUARED_ERRORS_DIFF,

@@ -72,9 +72,12 @@ int main()
   if(solver.IsValid()){
     solver.Solve();
     std::cout << solver.NumberOfSolutions() << " solution(s)"<< std::endl;
-    std::cout << *solver.SolutionPtr(0) << std::endl;
-    //std::cout << "Sq error " <<  solver.SolutionPtr(0)->sq_error << std::endl;
-    //std::cout << (solver.SolutionPtr(0))->r_hat << std::endl;
+    for (int i = 0; i < solver.NumberOfSolutions(); i++)
+    {
+      std::cout << "\nSolution " << i << ":\n";
+      std::cout << *solver.SolutionPtr(i) << std::endl;
+      std::cout << " Average squared projection error : " << solver.AverageSquaredProjectionErrors().at(i) << std::endl;
+    }
   }
 
   return 0;
