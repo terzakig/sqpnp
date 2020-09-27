@@ -142,6 +142,7 @@ namespace sqpnp
 				sqp_squared_tolerance(_sqp_squared_tolerance),
 				sqp_det_threshold(_sqp_det_threshold),
 				sqp_max_iteration(_sqp_max_iteration),
+				nearest_rotation_method(_nearest_rotation_method),
 				orthogonality_squared_error_threshold(_orthogonality_squared_error_threshold),
 				equal_vectors_squared_diff(_equal_vectors_squared_diff),
 				equal_squared_errors_diff(_equal_squared_errors_diff),
