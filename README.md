@@ -27,4 +27,15 @@ The latter will allow for more accurate timing of average execution time. Finall
 
 To run the example, once in the ``build`` directory,
 
-``./example/sqpnp_example``  
+``./example/sqpnp_example``
+
+## Cite as
+If you use this code in your published work, please cite the following paper:<br><br>
+@inproceedings{terzakis2020SQPnP,<br>
+  title={A Consistently Fast and Globally Optimal Solution to the Perspective-n-Point Problem},<br>
+  author={George Terzakis and Manolis Lourakis},<br>
+  booktitle={European Conference on Computer Vision},<br>
+  pages={},<br>
+  year={2020},<br>
+  publisher={Springer}<br>
+}<br>
