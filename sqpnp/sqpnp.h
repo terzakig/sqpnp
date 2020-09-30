@@ -248,7 +248,7 @@ namespace sqpnp
       const auto& r = solutions_[index].r_hat;
       const auto& t = solutions_[index].t;
       
-      for (int i = 0; i < points_.size(); i++)
+      for (unsigned int i = 0; i < points_.size(); i++)
       {
 	double Xc     =       r[0]*points_.at(i).vector[0] + r[1]*points_.at(i).vector[1] + r[2]*points_.at(i).vector[2] + t[0], 
 	       Yc     =       r[3]*points_.at(i).vector[0] + r[4]*points_.at(i).vector[1] + r[5]*points_.at(i).vector[2] + t[1], 
@@ -291,21 +291,34 @@ namespace sqpnp
 					  const double& det_threshold = 1e-8
 					 )
     {
-       // 1. Get the elements of the matrix
-       double a = Q(0, 0), b = Q(1, 0), c = Q(2, 0),
-	      d = Q(1, 0), e = Q(1, 1), f = Q(2, 1),
-	      g = Q(2, 0), h = Q(2, 1), i = Q(2, 2);
+      // 1. Get the elements of the matrix
+      double a = Q(0, 0),
+             b = Q(1, 0), d = Q(1, 1),
+             c = Q(2, 0), e = Q(2, 1), f = Q(2, 2);
  
       // 2. Determinant
-      double det = a*e*i + b*f*g + c*d*h - g*e*c - h*f*a - i*d*b;
+      double t2, t4, t7, t9, t12;
+      t2 = e*e;
+      t4 = a*d;
+      t7 = b*b;
+      t9 = b*c;
+      t12 = c*c;
+      double det = -t4*f+a*t2+t7*f-2.0*t9*e+t12*d;
       
       if ( fabs(det) < det_threshold ) return false;
-      double invDet = 1.0 / det;
  
-      // 3. Adjoint and inverse
-      Qinv(0, 0) = ( e*i - f*h ) * invDet; Qinv(0, 1) = ( h*c - i*b ) * invDet;   Qinv(0, 2) = ( b*f - c*e ) * invDet;
-      Qinv(1, 0) =  Qinv(0, 1);            Qinv(1, 1) = ( a*i - g*c ) * invDet;   Qinv(1, 2) = ( d*c - a*f ) * invDet;
-      Qinv(2, 0) =  Qinv(0, 2);            Qinv(2, 1) = Qinv(1, 2);               Qinv(2, 2) = ( a*e - d*b ) * invDet;
+      // 3. Inverse
+      double t15, t20, t24, t30;
+      t15 = 1.0/det;
+      t20 = (-b*f+c*e)*t15;
+      t24 = (b*e-c*d)*t15;
+      t30 = (a*e-t9)*t15;
+      Qinv(0, 0) = (-d*f+t2)*t15;
+      Qinv(0, 1) = Qinv(1, 0) = -t20;
+      Qinv(0, 2) = Qinv(2, 0) = -t24;
+      Qinv(1, 1) = -(a*f-t12)*t15;
+      Qinv(1, 2) = Qinv(2, 1) = t30;
+      Qinv(2, 2) = -(t4-t7)*t15;
 
       return true;
     }
