@@ -97,14 +97,15 @@ namespace sqpnp
       }
       else
       {
-	for (int k = 0; k < 2; k++)
-	{
-	  NearestRotationMatrix( (k == 0 ? 1 : -1) * e, solution[k].r );
-	  solution[k] = RunSQP( solution[k].r );
-	  solution[k].t = P_*solution[k].r_hat;
-	  
-	  HandleSolution( solution[k] , min_sq_error );
-	}
+	  NearestRotationMatrix( e, solution[0].r );
+	  solution[0] = RunSQP( solution[0].r );
+	  solution[0].t = P_*solution[0].r_hat;
+	  HandleSolution( solution[0] , min_sq_error );
+
+	  NearestRotationMatrix( -e, solution[1].r );
+	  solution[1] = RunSQP( solution[1].r );
+	  solution[1].t = P_*solution[1].r_hat;
+	  HandleSolution( solution[1] , min_sq_error );
       }
     }
 
@@ -116,15 +117,15 @@ namespace sqpnp
       const Eigen::Matrix<double, 9, 1> e = Eigen::Map<Eigen::Matrix<double, 9, 1>>( U_.block<9, 1>(0, index).data() );
       SQPSolution solution[2];
       
-      for (int k = 0; k < 2; k++)
-      {
-	NearestRotationMatrix( (k == 0 ? 1 : -1)*e, solution[k].r);
-      
-	solution[k] = RunSQP( solution[k].r );
-	solution[k].t = P_*solution[k].r_hat;
-	
-	HandleSolution( solution[k], min_sq_error );
-      }
+	NearestRotationMatrix( e, solution[0].r);
+	solution[0] = RunSQP( solution[0].r );
+	solution[0].t = P_*solution[0].r_hat;
+	HandleSolution( solution[0], min_sq_error );
+
+	NearestRotationMatrix( -e, solution[1].r);
+	solution[1] = RunSQP( solution[1].r );
+	solution[1].t = P_*solution[1].r_hat;
+	HandleSolution( solution[1], min_sq_error );
 	
       c++;
     }
