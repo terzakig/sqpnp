@@ -35,7 +35,7 @@ If you use this code in your published work, please cite the following paper:<br
   title={A Consistently Fast and Globally Optimal Solution to the Perspective-n-Point Problem},<br>
   author={George Terzakis and Manolis Lourakis},<br>
   booktitle={European Conference on Computer Vision},<br>
-  pages={},<br>
+  pages={478--494},<br>
   year={2020},<br>
-  publisher={Springer}<br>
+  publisher={Springer International Publishing}<br>
 }<br>
