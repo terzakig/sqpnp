@@ -73,13 +73,14 @@ namespace sqpnp
       num_null_vectors_ = -1; // set to -1 in case we never make it to the decomposition of Omega
       Omega_ = Eigen::Matrix<double, 9, 9>::Zero();
       const size_t n = _3dpoints.size();
-      double sum_wx = 0, 
-           sum_wy = 0, 
-           sum_wx2_plus_wy2 = 0, 
-           sum_w = 0;
-      double sum_X = 0,
-           sum_Y = 0,
-           sum_Z = 0;
+      double sum_wx = 0,
+        sum_wy = 0,
+        sum_wx2_plus_wy2 = 0,
+        sum_w = 0;
+      
+      double sum_X = 0,
+        sum_Y = 0,
+        sum_Z = 0;
 	     
       Eigen::Matrix<double, 3, 9> QA = Eigen::Matrix<double, 3, 9>::Zero();  // Sum( Qi*Ai )
       
@@ -93,8 +94,8 @@ namespace sqpnp
         points_.push_back( _3dpoints.at(i) );
         projections_.push_back( _projections.at(i) );
 	
-        const double wx = projections_.rbegin()->vector[0],
-               wy = projections_.rbegin()->vector[1], 
+        const double wx = projections_.rbegin()->vector[0] * w,
+               wy = projections_.rbegin()->vector[1] * w, 
         wsq_norm_m = w*projections_.rbegin()->vector.squaredNorm();
         sum_wx += wx;
         sum_wy += wy;
