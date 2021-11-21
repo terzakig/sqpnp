@@ -48,87 +48,100 @@ namespace sqpnp
       avg_errors.reserve(num_solutions_);
       for (int i = 0; i < num_solutions_; i++)
       {
-	avg_errors.emplace_back( AverageSquaredProjectionError(i) );
+          avg_errors.emplace_back( AverageSquaredProjectionError(i) );
       }
       return avg_errors;
     }
+    const std::vector<double>& Weights() const { return weights_; }
 
     //
     // Constructor (initializes Omega and P and U, s, i.e. the decomposition of Omega)
-    template <class Point3D, class Projection2D>
+    template <class Point3D, class Projection2D, typename Pw = double>
     inline PnPSolver(const std::vector<Point3D>& _3dpoints, 
 		    const std::vector<Projection2D>& _projections, 
-		    const SolverParameters& _parameters = SolverParameters()
-		    ) : parameters_(_parameters)
+		    const std::vector<Pw>& _weights = std::vector<Pw>(),
+		    const SolverParameters& _parameters = SolverParameters()) : parameters_(_parameters)
     {
       if (_3dpoints.size() !=_projections.size() || _3dpoints.size() < 3 || _projections.size() < 3 )
       {
-	flag_valid_= false;
-	return;
+        flag_valid_= false;
+        return;
       }
+      
+      weights_.resize(_3dpoints.size(),  1.0);
       
       flag_valid_ = true;
       num_null_vectors_ = -1; // set to -1 in case we never make it to the decomposition of Omega
       Omega_ = Eigen::Matrix<double, 9, 9>::Zero();
       const size_t n = _3dpoints.size();
-      double sum_x = 0, 
-	     sum_y = 0, 
-	     sum_x2_plus_y2 = 0;
+      double sum_wx = 0,
+        sum_wy = 0,
+        sum_wx2_plus_wy2 = 0,
+        sum_w = 0;
+      
       double sum_X = 0,
-	     sum_Y = 0,
-	     sum_Z = 0;
+        sum_Y = 0,
+        sum_Z = 0;
 	     
       Eigen::Matrix<double, 3, 9> QA = Eigen::Matrix<double, 3, 9>::Zero();  // Sum( Qi*Ai )
       
       for (size_t i = 0; i < n; i++)
       {
-	points_.push_back( _3dpoints.at(i) );
-	projections_.push_back( _projections.at(i) );
+        if (!_weights.empty())
+        {
+            weights_[i] = _weights.at(i);
+        }
+        const double& w = weights_.at(i);
+        points_.push_back( _3dpoints.at(i) );
+        projections_.push_back( _projections.at(i) );
 	
-	double x = projections_.rbegin()->vector[0],
-	       y = projections_.rbegin()->vector[1], 
-	       sq_norm_m = projections_.rbegin()->vector.squaredNorm();
-	sum_x += x;
-	sum_y += y;
-	sum_x2_plus_y2 += sq_norm_m;
+        const double wx = projections_.rbegin()->vector[0] * w,
+               wy = projections_.rbegin()->vector[1] * w, 
+        wsq_norm_m = w*projections_.rbegin()->vector.squaredNorm();
+        sum_wx += wx;
+        sum_wy += wy;
+        sum_wx2_plus_wy2 += wsq_norm_m;
+        sum_w +=  w;
+        
+        double X = points_.rbegin()->vector[0],
+            Y = points_.rbegin()->vector[1],
+            Z = points_.rbegin()->vector[2];
+        sum_X += X;
+        sum_Y += Y;
+        sum_Z += Z;
 	
-	double X = points_.rbegin()->vector[0],
-	       Y = points_.rbegin()->vector[1],
-	       Z = points_.rbegin()->vector[2];
-	sum_X += X;
-	sum_Y += Y;
-	sum_Z += Z;
-	
-	// Accumulate Omega by kronecker( Qi, Mi*Mi' ) = Q + A'*Qi*Ai. NOTE: Skipping block (3:5, 3:5) because its same as (0:2, 0:2)
-	double X2 = X*X, XY = X*Y, XZ = X*Z, Y2 = Y*Y, YZ = Y*Z, Z2 = Z*Z;
-	// a. Block (0:2, 0:2) populated by Mi*Mi'. NOTE: Only upper triangle
-	Omega_(0, 0) += X2;
-	Omega_(0, 1) += XY;
-	Omega_(0, 2) += XZ;
-	Omega_(1, 1) += Y2;
-	Omega_(1, 2) += YZ;
-	Omega_(2, 2) += Z2;
-	
-	// b. Block (0:2, 6:8) populated by -x*Mi*Mi'. NOTE: Only upper triangle
-	Omega_(0, 6) += -x*X2; Omega_(0, 7) += -x*XY; Omega_(0, 8) += -x*XZ;
-			       Omega_(1, 7) += -x*Y2; Omega_(1, 8) += -x*YZ;  
-						      Omega_(2, 8) += -x*Z2;
-	// c. Block (3:5, 6:8) populated by -y*Mi*Mi'. NOTE: Only upper triangle
-	Omega_(3, 6) += -y*X2; Omega_(3, 7) += -y*XY; Omega_(3, 8) += -y*XZ;
-			       Omega_(4, 7) += -y*Y2; Omega_(4, 8) += -y*YZ;  
-						      Omega_(5, 8) += -y*Z2;
-	// d. Block (6:8, 6:8) populated by (x^2+y^2)*Mi*Mi'. NOTE: Only upper triangle
-	Omega_(6, 6) += sq_norm_m*X2; Omega_(6, 7) += sq_norm_m*XY; Omega_(6, 8) += sq_norm_m*XZ;
-				      Omega_(7, 7) += sq_norm_m*Y2; Omega_(7, 8) += sq_norm_m*YZ;  
-								    Omega_(8, 8) += sq_norm_m*Z2;
+        // Accumulate Omega by kronecker( Qi, Mi*Mi' ) = A'*Qi*Ai. NOTE: Skipping block (3:5, 3:5) because its same as (0:2, 0:2)
+        const double X2 = X*X, XY = X*Y, XZ = X*Z, Y2 = Y*Y, YZ = Y*Z, Z2 = Z*Z;
+        
+        // a. Block (0:2, 0:2) populated by Mi*Mi'. NOTE: Only upper triangle
+        Omega_(0, 0) += w*X2;
+        Omega_(0, 1) += w*XY;
+        Omega_(0, 2) += w*XZ;
+        Omega_(1, 1) += w*Y2;
+        Omega_(1, 2) += w*YZ;
+        Omega_(2, 2) += w*Z2;
+        
+        // b. Block (0:2, 6:8) populated by -x*Mi*Mi'. NOTE: Only upper triangle
+        Omega_(0, 6) += -wx*X2; Omega_(0, 7) += -wx*XY; Omega_(0, 8) += -wx*XZ;
+                                Omega_(1, 7) += -wx*Y2; Omega_(1, 8) += -wx*YZ;  
+                                                        Omega_(2, 8) += -wx*Z2;
+        // c. Block (3:5, 6:8) populated by -y*Mi*Mi'. NOTE: Only upper triangle
+        Omega_(3, 6) += -wy*X2; Omega_(3, 7) += -wy*XY; Omega_(3, 8) += -wy*XZ;
+                                Omega_(4, 7) += -wy*Y2; Omega_(4, 8) += -wy*YZ;  
+                                                        Omega_(5, 8) += -wy*Z2;
+                                                        
+        // d. Block (6:8, 6:8) populated by (x^2+y^2)*Mi*Mi'. NOTE: Only upper triangle
+        Omega_(6, 6) += wsq_norm_m*X2; Omega_(6, 7) += wsq_norm_m*XY; Omega_(6, 8) += wsq_norm_m*XZ;
+                                       Omega_(7, 7) += wsq_norm_m*Y2; Omega_(7, 8) += wsq_norm_m*YZ;
+                                                                      Omega_(8, 8) += wsq_norm_m*Z2;
 									
-	// Accumulating Qi*Ai in QA
-	QA(0, 0) += X; QA(0, 1) += Y; QA(0, 2) += Z; 	QA(0, 6) += -x*X; QA(0, 7) += -x*Y; QA(0, 8) += -x*Z;
-	QA(1, 3) += X; QA(1, 4) += Y; QA(1, 5) += Z; 	QA(1, 6) += -y*X; QA(1, 7) += -y*Y; QA(1, 8) += -y*Z;
-	
-	QA(2, 0) += -x*X; QA(2, 1) += -x*Y; QA(2, 2) += -x*Z; 	QA(2, 3) += -y*X; QA(2, 4) += -y*Y; QA(2, 5) += -y*Z;
-	QA(2, 6) += sq_norm_m*X; QA(2, 7) += sq_norm_m*Y; QA(2, 8) += sq_norm_m*Z; 
-	
+        // Accumulating Qi*Ai in QA
+        const double wX = w*X,  wY = w*Y,  wZ = w*Z;
+        QA(0, 0) += wX; QA(0, 1) += wY; QA(0, 2) += wZ; 	QA(0, 6) += -wx*X; QA(0, 7) += -wx*Y; QA(0, 8) += -wx*Z;
+        QA(1, 3) += wX; QA(1, 4) += wY; QA(1, 5) += wZ; 	QA(1, 6) += -wy*X; QA(1, 7) += -wy*Y; QA(1, 8) += -wy*Z;
+        
+        QA(2, 0) += -wx*X; QA(2, 1) += -wx*Y; QA(2, 2) += -wx*Z; 	QA(2, 3) += -wy*X; QA(2, 4) += -wy*Y; QA(2, 5) += -wy*Z;
+        QA(2, 6) += wsq_norm_m*X; QA(2, 7) += wsq_norm_m*Y; QA(2, 8) += wsq_norm_m*Z; 
       }
       
       // Fill-in lower triangles of off-diagonal blocks (0:2, 6:8), (3:5, 6:8) and (6:8, 6:8)
@@ -138,8 +151,8 @@ namespace sqpnp
       
       // Fill-in upper triangle of block (3:5, 3:5)
       Omega_(3, 3) = Omega_(0, 0); Omega_(3, 4) = Omega_(0, 1); Omega_(3, 5) = Omega_(0, 2);
-				   Omega_(4, 4) = Omega_(1, 1); Omega_(4, 5) = Omega_(1, 2);
-								Omega_(5, 5) = Omega_(2, 2);
+                                   Omega_(4, 4) = Omega_(1, 1); Omega_(4, 5) = Omega_(1, 2);
+                                                                Omega_(5, 5) = Omega_(2, 2);
       // Fill lower triangle of Omega
       Omega_(1, 0) = Omega_(0, 1);
       Omega_(2, 0) = Omega_(0, 2); Omega_(2, 1) = Omega_(1, 2);
@@ -148,28 +161,20 @@ namespace sqpnp
       Omega_(5, 0) = Omega_(0, 5); Omega_(5, 1) = Omega_(1, 5); Omega_(5, 2) = Omega_(2, 5); Omega_(5, 3) = Omega_(3, 5); Omega_(5, 4) = Omega_(4, 5);
       Omega_(6, 0) = Omega_(0, 6); Omega_(6, 1) = Omega_(1, 6); Omega_(6, 2) = Omega_(2, 6); Omega_(6, 3) = Omega_(3, 6); Omega_(6, 4) = Omega_(4, 6); Omega_(6, 5) = Omega_(5, 6);
       Omega_(7, 0) = Omega_(0, 7); Omega_(7, 1) = Omega_(1, 7); Omega_(7, 2) = Omega_(2, 7); Omega_(7, 3) = Omega_(3, 7); Omega_(7, 4) = Omega_(4, 7); Omega_(7, 5) = Omega_(5, 7); Omega_(7, 6) = Omega_(6, 7);
-      Omega_(8, 0) = Omega_(0, 8); Omega_(8, 1) = Omega_(1, 8); Omega_(8, 2) = Omega_(2, 8); Omega_(8, 3) = Omega_(3, 8); Omega_(8, 4) = Omega_(4, 8); Omega_(8, 5) = Omega_(5, 8); Omega_(8, 6) = Omega_(6, 8); Omega_(8, 7) = Omega_(7, 8);
+      Omega_(8, 0) = Omega_(0, 8); Omega_(8, 1) = Omega_(1, 8); Omega_(8, 2) = Omega_(2, 8); Omega_(8, 3) = Omega_(3, 8); Omega_(8, 4) = Omega_(4, 8); Omega_(8, 5) = Omega_(5, 8);
+      Omega_(8, 6) = Omega_(6, 8); Omega_(8, 7) = Omega_(7, 8);
 
-      // Q = Sum( Qi ) = Sum( [ 1, 0, -x; 0, 1, -y; -x, -y, x^2 + y^2] )
+      // Q = Sum( wi*Qi ) = Sum( [ wi, 0, -wi*xi; 0, 1, -wi*yi; -wi*xi, -wi*yi, wi*(xi^2 + yi^2)] )
       Eigen::Matrix<double, 3, 3> Q;
-      Q(0, 0) = n; Q(0, 1) = 0; Q(0, 2) = -sum_x;
-      Q(1, 0) = 0; Q(1, 1) = n; Q(1, 2) = -sum_y;
-      Q(2, 0) = -sum_x; Q(2, 1) = -sum_y; Q(2, 2) = sum_x2_plus_y2; 
+      Q(0, 0) = sum_w;     Q(0, 1) = 0;         Q(0, 2) = -sum_wx;
+      Q(1, 0) = 0;         Q(1, 1) = sum_w;     Q(1, 2) = -sum_wy;
+      Q(2, 0) = -sum_wx;   Q(2, 1) = -sum_wy;   Q(2, 2) = sum_wx2_plus_wy2; 
       
       // Qinv = inv( Q ) = inv( Sum( Qi) )
-      double inv_n = 1.0 / n;
-      double detQ = n*( n*sum_x2_plus_y2 - sum_y*sum_y - sum_x*sum_x );
-      double point_coordinate_variance = detQ * inv_n * inv_n * inv_n;
-      if ( point_coordinate_variance < parameters_.point_variance_threshold ) 
-      {
-	flag_valid_ = false;
-	return;
-      }
-      
       Eigen::Matrix<double, 3, 3> Qinv;
       InvertSymmetric3x3(Q, Qinv);
       
-      // Compute P = -inv( Sum(Qi) ) * Sum( Qi*Ai ) = -Qinv * QA
+      // Compute P = -inv( Sum(wi*Qi) ) * Sum( wi*Qi*Ai ) = -Qinv * QA
       P_ = -Qinv * QA;
       // Complete Omega (i.e., Omega = Sum(A'*Qi*A') + Sum(Qi*Ai)'*P = Sum(A'*Qi*A') + Sum(Qi*Ai)'*inv(Sum(Qi))*Sum( Qi*Ai) 
       Omega_ +=  QA.transpose()*P_;
@@ -185,20 +190,21 @@ namespace sqpnp
       // Dimension of null space of Omega must be <= 6
       if (++num_null_vectors_ > 6) 
       {
-	flag_valid_ = false;
+          flag_valid_ = false;
       }
       
-      // Point mean 
+      // 3D point mean (for cheirality checks)
+      const double inv_n = 1.0 / n;
       point_mean_ << sum_X*inv_n, sum_Y*inv_n, sum_Z*inv_n;
       
       // Assign nearest rotation method
       if ( parameters_.nearest_rotation_method == NearestRotationMethod::FOAM )
       {
-	NearestRotationMatrix = NearestRotationMatrix_FOAM;
+          NearestRotationMatrix = NearestRotationMatrix_FOAM;
       } 
       else // if ( parameters_.nearest_rotation_method == NearestRotationMethod::SVD )
       {
-	NearestRotationMatrix = NearestRotationMatrix_SVD;
+          NearestRotationMatrix = NearestRotationMatrix_SVD;
       }
     }
     
@@ -209,7 +215,7 @@ namespace sqpnp
   private:
     std::vector<_Projection> projections_;
     std::vector<_Point> points_;
-    
+    std::vector<double> weights_;
     SolverParameters parameters_;
     
     Eigen::Matrix<double, 9, 9> Omega_;
