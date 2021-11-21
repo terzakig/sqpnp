@@ -52,6 +52,7 @@ namespace sqpnp
       }
       return avg_errors;
     }
+    const std::vector<double>& Weights() const { return weights_; }
 
     //
     // Constructor (initializes Omega and P and U, s, i.e. the decomposition of Omega)
