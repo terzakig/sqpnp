@@ -63,15 +63,15 @@ int main()
     _projections[i]=sqpnp::_Projection(p2[0], p2[1]);
   }
 
-  sqpnp::PnPSolver solver(_3dpoints, _projections, n);
+  // equal weights for all points
+  sqpnp::PnPSolver solver(_3dpoints, _projections, std::vector<double>(n, 1.0));
 
   auto stop = std::chrono::high_resolution_clock::now();
-  auto duration = std::chrono::duration_cast<std::chrono::microseconds>(stop - start);
-  std::cout << "Time taken by SQPnP: " << duration.count() << " microseconds" << std::endl << std::endl;
 
   if(solver.IsValid()){
     solver.Solve();
-    std::cout << solver.NumberOfSolutions() << " solution(s)"<< std::endl;
+    stop = std::chrono::high_resolution_clock::now();
+    std::cout << "SQPnP found " << solver.NumberOfSolutions() << " solution(s)"<< std::endl;
     for (int i = 0; i < solver.NumberOfSolutions(); i++)
     {
       std::cout << "\nSolution " << i << ":\n";
@@ -79,6 +79,8 @@ int main()
       std::cout << " Average squared projection error : " << solver.AverageSquaredProjectionErrors().at(i) << std::endl;
     }
   }
+  auto duration = std::chrono::duration_cast<std::chrono::microseconds>(stop - start);
+  std::cout << "Time taken by SQPnP: " << duration.count() << " microseconds" << std::endl << std::endl;
 
   return 0;
 }
