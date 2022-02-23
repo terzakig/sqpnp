@@ -185,13 +185,11 @@ namespace sqpnp
       U_ = svd.matrixU();
       s_ = svd.singularValues();
 #else
+      // Omega is self-adjoint, hence decomposes as U*D*Ut . This is faster than SVD
       Eigen::SelfAdjointEigenSolver<Eigen::Matrix<double, 9, 9>> evd(Omega_);
-      // evals are in increasing order, sort everything in decreasing order
-      U_ = evd.eigenvectors();
-      U_.col(0).swap(U_.col(8));
-      U_.col(1).swap(U_.col(7));
-      U_.col(2).swap(U_.col(6));
-      U_.col(3).swap(U_.col(5));
+      // evals are in increasing order, reorder them so that they decrease
+      U_ = evd.eigenvectors().rowwise().reverse();
+      //U_ = evd.eigenvectors(); for (int i = 0; i < 4; ++i) U_.col(i).swap(U_.col(8-i));
 
       s_ = evd.eigenvalues();
       std::swap(s_[0], s_[8]);
