@@ -30,3 +30,5 @@ list( APPEND LIBS SQPnP )
 add_executable(sqpnp_example ${sources})
 
 target_link_libraries(sqpnp_example ${LIBS} )
+
+add_subdirectory (robust)
