@@ -160,9 +160,9 @@ namespace sqpnp
       Omega_(4, 0) = Omega_(0, 4); Omega_(4, 1) = Omega_(1, 4); Omega_(4, 2) = Omega_(2, 4); Omega_(4, 3) = Omega_(3, 4);
       Omega_(5, 0) = Omega_(0, 5); Omega_(5, 1) = Omega_(1, 5); Omega_(5, 2) = Omega_(2, 5); Omega_(5, 3) = Omega_(3, 5); Omega_(5, 4) = Omega_(4, 5);
       Omega_(6, 0) = Omega_(0, 6); Omega_(6, 1) = Omega_(1, 6); Omega_(6, 2) = Omega_(2, 6); Omega_(6, 3) = Omega_(3, 6); Omega_(6, 4) = Omega_(4, 6); Omega_(6, 5) = Omega_(5, 6);
-      Omega_(7, 0) = Omega_(0, 7); Omega_(7, 1) = Omega_(1, 7); Omega_(7, 2) = Omega_(2, 7); Omega_(7, 3) = Omega_(3, 7); Omega_(7, 4) = Omega_(4, 7); Omega_(7, 5) = Omega_(5, 7); Omega_(7, 6) = Omega_(6, 7);
+      Omega_(7, 0) = Omega_(0, 7); Omega_(7, 1) = Omega_(1, 7); Omega_(7, 2) = Omega_(2, 7); Omega_(7, 3) = Omega_(3, 7); Omega_(7, 4) = Omega_(4, 7); Omega_(7, 5) = Omega_(5, 7); //Omega_(7, 6) = Omega_(6, 7);
       Omega_(8, 0) = Omega_(0, 8); Omega_(8, 1) = Omega_(1, 8); Omega_(8, 2) = Omega_(2, 8); Omega_(8, 3) = Omega_(3, 8); Omega_(8, 4) = Omega_(4, 8); Omega_(8, 5) = Omega_(5, 8);
-      Omega_(8, 6) = Omega_(6, 8); Omega_(8, 7) = Omega_(7, 8);
+      //Omega_(8, 6) = Omega_(6, 8); Omega_(8, 7) = Omega_(7, 8);
 
       // Q = Sum( wi*Qi ) = Sum( [ wi, 0, -wi*xi; 0, 1, -wi*yi; -wi*xi, -wi*yi, wi*(xi^2 + yi^2)] )
       Eigen::Matrix<double, 3, 3> Q;
@@ -180,11 +180,24 @@ namespace sqpnp
       Omega_ +=  QA.transpose()*P_;
       
       // Finally, decompose Omega
+#if 0
       Eigen::JacobiSVD<Eigen::Matrix<double, 9, 9>> svd(Omega_, Eigen::ComputeFullU);
-        
       U_ = svd.matrixU();
       s_ = svd.singularValues();
-      
+#else
+      // Omega is self-adjoint, hence decomposes as U*D*Ut . This is faster than SVD
+      Eigen::SelfAdjointEigenSolver<Eigen::Matrix<double, 9, 9>> evd(Omega_);
+      // evals are in increasing order, reorder them so that they decrease
+      U_ = evd.eigenvectors().rowwise().reverse();
+      //U_ = evd.eigenvectors(); for (int i = 0; i < 4; ++i) U_.col(i).swap(U_.col(8-i));
+
+      s_ = evd.eigenvalues();
+      std::swap(s_[0], s_[8]);
+      std::swap(s_[1], s_[7]);
+      std::swap(s_[2], s_[6]);
+      std::swap(s_[3], s_[5]);
+#endif
+  
       // Find dimension of null space
       while (s_[7 - num_null_vectors_] < _parameters.rank_tolerance) num_null_vectors_++;
       // Dimension of null space of Omega must be <= 6
@@ -267,13 +280,31 @@ namespace sqpnp
     }    
 
     //
-    // Test cheirality for a given solution
+    // Test cheirality on the mean point for a given solution
     inline bool TestPositiveDepth(const SQPSolution& solution)
     {
       const auto& r = solution.r_hat;
       const auto& t = solution.t;
       const auto& M = point_mean_;
       return ( r[6]*M[0] + r[7]*M[1] + r[8]*M[2] + t[2] > 0 );
+	
+    }
+
+    //
+    // Test cheirality on the majority of points for a given solution
+    inline bool TestPositiveMajorityDepths(const SQPSolution& solution)
+    {
+      const auto& r = solution.r_hat;
+      const auto& t = solution.t;
+      int npos = 0, nneg = 0;
+
+      for (unsigned int i = 0; i < points_.size(); i++) {
+        const auto& M = points_[i].vector;
+        if ( r[6]*M[0] + r[7]*M[1] + r[8]*M[2] + t[2] > 0 ) ++npos;
+        else ++nneg;
+      }
+
+      return npos >= nneg;
 	
     }
     

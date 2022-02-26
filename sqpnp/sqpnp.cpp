@@ -29,7 +29,8 @@ namespace sqpnp
   
   void PnPSolver::HandleSolution(SQPSolution& solution, double& min_sq_error)
   {
-      if ( TestPositiveDepth( solution ) )
+      bool cheirok = TestPositiveDepth( solution ) || TestPositiveMajorityDepths ( solution ); // check the majority if the check with centroid fails
+      if ( cheirok )
       {
 	
 	solution.sq_error = ( Omega_ * solution.r_hat ).dot( solution.r_hat );
