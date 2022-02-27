@@ -91,7 +91,7 @@ int PoseEstimator::ransacfit(double inlPcent, double outlThresh, robust_pose_pnp
   return num_inliers == 0;
 }
 
-#if 0
+#if 1
 // this version creates local copies for the points corresponding to sample
 int PoseEstimator::sqpnp_solve(const std::vector<int>& sample,
                                  std::vector<robust_pose_pnp::Matrix34d, Eigen::aligned_allocator<robust_pose_pnp::Matrix34d> > *poses) const {
