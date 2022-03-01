@@ -214,7 +214,7 @@ int PoseEstimator::NonMinimalSolver(const std::vector<int>& sample,
 
   if (n > 1) std::cerr << "More than one solution in PoseEstimator::NonMinimalSolver()!\n" << std::flush;
 
-  *pose = poses[0];
+  if (n > 0) *pose = poses[0];
 
   return n > 0;
 }
