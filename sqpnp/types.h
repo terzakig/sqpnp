@@ -6,8 +6,8 @@
 // Implementation of SQPnP as described in the paper:
 //
 // "A Consistently Fast and Globally Optimal Solution to the Perspective-n-Point Problem" by G. Terzakis and M. Lourakis
-//  	 a) Paper: 	   http://www.ecva.net/papers/eccv_2020/papers_ECCV/papers/123460460.pdf 
-//       b) Supplementary: https://www.ecva.net/papers/eccv_2020/papers_ECCV/papers/123460460.pdf
+//     a) Paper:         https://www.ecva.net/papers/eccv_2020/papers_ECCV/papers/123460460.pdf
+//     b) Supplementary: https://www.ecva.net/papers/eccv_2020/papers_ECCV/papers/123460460-supp.pdf
 
 #ifndef _SQPNPTYPES__H_
 #define _SQPNPTYPES__H_
@@ -28,7 +28,7 @@ namespace sqpnp
   // Euclidean projection
   struct _Projection
   {
-    Eigen::Matrix<double, 2, 1> vector;
+    Eigen::Matrix<double, 2, 1, Eigen::DontAlign> vector; // for older compilers, this might need to be declared as Eigen::Matrix<double, 2, 1, Eigen::DontAlign>
     
     inline _Projection() : vector(Eigen::Matrix<double, 2, 1>(0, 0)) {}
     
