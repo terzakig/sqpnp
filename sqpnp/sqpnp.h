@@ -373,14 +373,12 @@ namespace sqpnp
       r = Eigen::Map<Eigen::Matrix<double, 9, 1>>(R.data(), 9, 1);
     }
 
-    // faster nearest rotation computation based on FOAM (see: http://users.ics.forth.gr/~lourakis/publ/2018_iros.pdf )
+    // Faster nearest rotation computation based on FOAM. See M. Lourakis: "An Efficient Solution to Absolute Orientation", ICPR 2016
     /* Solve the nearest orthogonal approximation problem
      * i.e., given B, find R minimizing ||R-B||_F
      *
      * The computation borrows from Markley's FOAM algorithm
-     * "Attitude Determination Using Vector Observations: A Fast Optimal Matrix Algorithm", J. Astronaut. Sci.
-     *
-     * See also M. Lourakis: "An Efficient Solution to Absolute Orientation", ICPR 2016
+     * "Attitude Determination Using Vector Observations: A Fast Optimal Matrix Algorithm", J. Astronaut. Sci. 1993.
      *
      *  Copyright (C) 2019 Manolis Lourakis (lourakis **at** ics forth gr)
      *  Institute of Computer Science, Foundation for Research & Technology - Hellas
@@ -406,7 +404,9 @@ namespace sqpnp
       adjBsq=adjB[0]*adjB[0]+adjB[1]*adjB[1]+adjB[2]*adjB[2] + adjB[3]*adjB[3]+adjB[4]*adjB[4]+adjB[5]*adjB[5] + adjB[6]*adjB[6]+adjB[7]*adjB[7]+adjB[8]*adjB[8];
 
       // compute l_max with Newton-Raphson from FOAM's characteristic polynomial, i.e. eq.(23) - (26)
-      for(i=200, l=2.0, lprev=0.0; fabs(l-lprev)>1E-12*fabs(lprev) && i>0; --i){
+      l=0.5*(Bsq + 3.0); // 1/2*(trace(B*B') + trace(eye(3)))
+      if(detB<0.0) l=-l; // trB & detB have opposite signs!
+      for(i=15, lprev=0.0; fabs(l-lprev)>1E-12*fabs(lprev) && i>0; --i){
         double tmp, p, pp;
 
         tmp=(l*l-Bsq);
@@ -468,7 +468,7 @@ namespace sqpnp
       //double R[9];
       //r=Eigen::Map<Eigen::Matrix<double, 9, 1>>(R);
     }
-        
+
     //
     // Produce a distance from being orthogonal for a random 3x3 matrix
     // Matrix is provided as a vector
