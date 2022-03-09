@@ -290,7 +290,8 @@ namespace sqpnp
       for (unsigned int i = 0; i < points_.size(); i++)
       {
 	const auto& M = points_[i].vector;
-	double Xc     =         r[0]*M[0] + r[1]*M[1] + r[2]*M[2] + t[0], 
+	const double Xc     =         r[0]*M[0] + r[1]*M[1] + r[2]*M[2] + t[0], 
+
 	       Yc     =         r[3]*M[0] + r[4]*M[1] + r[5]*M[2] + t[1], 
 	       inv_Zc = 1.0 / ( r[6]*M[0] + r[7]*M[1] + r[8]*M[2] + t[2] );
 
