@@ -325,7 +325,8 @@ namespace sqpnp
       const auto& t = solution.t;
       int npos = 0, nneg = 0;
 
-      for (unsigned int i = 0; i < points_.size(); i++) {
+      for (size_t i = 0; i < points_.size(); i++) {
+
         if ( weights_[i] == 0.0) continue;
         const auto& M = points_[i].vector;
         if ( r[6]*M[0] + r[7]*M[1] + r[8]*M[2] + t[2] > 0 ) ++npos;
