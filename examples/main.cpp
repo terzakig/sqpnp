@@ -106,7 +106,7 @@ static void poseError(const sqpnp::SQPSolution& solution, const cv::Matx<double,
     a = Rg(0, 0)*solution.r_hat[0] + Rg(1, 0)*solution.r_hat[3] + Rg(2, 0)*solution.r_hat[6];
     b = Rg(0, 1)*solution.r_hat[1] + Rg(1, 1)*solution.r_hat[4] + Rg(2, 1)*solution.r_hat[7];
     c = Rg(0, 2)*solution.r_hat[2] + Rg(1, 2)*solution.r_hat[5] + Rg(2, 2)*solution.r_hat[8];
-    double trc = a + b + c;
+    const double trc = a + b + c;
     a = 0.5*(trc - 1.0);
     aerr = acos(std::min(std::max(-1.0, a), 1.0)); // clamp to [-1, 1]
 }
