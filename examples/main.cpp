@@ -90,7 +90,7 @@ void GenerateSyntheticPoints(int n,
 }
 
 // compute the translational and angular error between the pose R,t contained in an SQPnP solution and the (true) pose Rg,tg
-static void poseError(const sqpnp::SQPSolution& solution, cv::Matx<double, 3, 3>& Rg, cv::Vec<double, 3>& tg, double& terr, double& aerr)
+static void poseError(const sqpnp::SQPSolution& solution, const cv::Matx<double, 3, 3>& Rg, const cv::Vec<double, 3>& tg, double& terr, double& aerr)
 {
     // translational error
     double a = tg(0) - solution.t(0);
