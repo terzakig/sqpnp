@@ -1,11 +1,17 @@
 # SQPnP 
-C++ Implementation of the SQPnP algorithm. 
+C++ Implementation of the SQPnP algorithm.
 
 The algorithm is the generic PnP solver described in the paper ["A Consistently Fast and Globally Optimal Solution to the Perspective-n-Point Problem" by G. Terzakis and M. Lourakis](http://www.ecva.net/papers/eccv_2020/papers_ECCV/papers/123460460.pdf). For more intuition, refer to the supplementary material [here](https://www.ecva.net/papers/eccv_2020/papers_ECCV/papers/123460460-supp.pdf).
 
 ## Required libraries
-SQPnP requires the Eigen library to build. Besides eigendecomposition, the use of Eigen is confined to matrix addition, transposition and multiplication. Choosing Eigen was motivated by its increasing popularity and lightweight character. There are also three examples of using the solver in this repository, a) one that uses OpenCV, just for the sake of demonstrating the initialization of SQPnP with ``cv::Point_<>`` and ``cv::Point3_<>`` structures, b) another in which data points are copied from plain 2D arrays, and c) a third which demonstrates SQPnP within RANSAC. Build will proceed with either one of a) or b), depending on whether OpenCV is found or not.
-Example c) uses the [RansacLib](https://github.com/tsattler/RansacLib) template-based library, (part of) which is included in this repository.
+SQPnP requires the [Eigen](http://eigen.tuxfamily.org/index.php?title=Main_Page) library to build. Besides eigendecomposition, the use of Eigen is confined to matrix addition, transposition and multiplication.
+Choosing Eigen was motivated by its increasing popularity and lightweight character. There are also three examples of using the solver in this repository:
+1. ) one that uses OpenCV, just for the sake of demonstrating the initialization of SQPnP with ``cv::Point_<>`` and ``cv::Point3_<>`` structures,
+2. ) another in which data points are copied from plain 2D arrays, and
+3. ) a third which demonstrates SQPnP within RANSAC.
+
+Build will proceed with either one of 1) or 2), depending on whether OpenCV is found or not.
+Example 3) uses the [RansacLib](https://github.com/tsattler/RansacLib) template-based library, (part of) which is included in this repository.
 
 Build
 -----
