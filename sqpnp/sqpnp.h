@@ -7,8 +7,8 @@
 // Implementation of SQPnP as described in the paper:
 //
 // "A Consistently Fast and Globally Optimal Solution to the Perspective-n-Point Problem" by G. Terzakis and M. Lourakis
-//  	 a) Paper: 	   http://www.ecva.net/papers/eccv_2020/papers_ECCV/papers/123460460.pdf 
-//       b) Supplementary: https://www.ecva.net/papers/eccv_2020/papers_ECCV/papers/123460460.pdf
+//     a) Paper:         https://www.ecva.net/papers/eccv_2020/papers_ECCV/papers/123460460.pdf 
+//     b) Supplementary: https://www.ecva.net/papers/eccv_2020/papers_ECCV/papers/123460460-supp.pdf
   
 
 #ifndef SQPnP_H__
@@ -37,14 +37,14 @@ namespace sqpnp
     const int NumberOfSolutions() const { return num_solutions_; }
     const SQPSolution* const SolutionPtr(const int index) const 
     { 
-      return index < 0 || index > num_solutions_-1 ? nullptr : &solutions_[index]; 
+      return index < 0 || index >= num_solutions_ ? nullptr : &solutions_[index]; 
     }
     
     //
     // Return average reprojection errors
     inline std::vector<double> AverageSquaredProjectionErrors() const
     {
-      std::vector<double> avg_errors;;
+      std::vector<double> avg_errors;
       avg_errors.reserve(num_solutions_);
       for (int i = 0; i < num_solutions_; i++)
       {
@@ -55,62 +55,77 @@ namespace sqpnp
     const std::vector<double>& Weights() const { return weights_; }
 
     //
-    // Constructor (initializes Omega and P and U, s, i.e. the decomposition of Omega)
+    // Constructor (initializes Omega, P and U, s, i.e. the decomposition of Omega)
     template <class Point3D, class Projection2D, typename Pw = double>
     inline PnPSolver(const std::vector<Point3D>& _3dpoints, 
 		    const std::vector<Projection2D>& _projections, 
 		    const std::vector<Pw>& _weights = std::vector<Pw>(),
 		    const SolverParameters& _parameters = SolverParameters()) : parameters_(_parameters)
     {
-      if (_3dpoints.size() !=_projections.size() || _3dpoints.size() < 3 || _projections.size() < 3 )
+      const size_t n = _3dpoints.size();
+
+      if (n !=_projections.size() || n < 3 )
       {
-        flag_valid_= false;
+        flag_valid_ = false;
         return;
       }
       
-      weights_.resize(_3dpoints.size(),  1.0);
+      if (!_weights.empty())
+      {
+        if (n != _weights.size() ) {
+          flag_valid_ = false;
+          return;
+        }
+
+        weights_ = _weights;
+      }
+      else
+      {
+        weights_.resize(n, 1.0);
+      }
       
       flag_valid_ = true;
+      points_.reserve(n);
+      projections_.reserve(n);
       num_null_vectors_ = -1; // set to -1 in case we never make it to the decomposition of Omega
       Omega_ = Eigen::Matrix<double, 9, 9>::Zero();
-      const size_t n = _3dpoints.size();
-      double sum_wx = 0,
-        sum_wy = 0,
-        sum_wx2_plus_wy2 = 0,
-        sum_w = 0;
+      double sum_wx = 0.0,
+        sum_wy = 0.0,
+        sum_wx2_plus_wy2 = 0.0,
+        sum_w = 0.0;
       
-      double sum_X = 0,
-        sum_Y = 0,
-        sum_Z = 0;
+      double sum_wX = 0.0,
+        sum_wY = 0.0,
+        sum_wZ = 0.0;
 	     
       Eigen::Matrix<double, 3, 9> QA = Eigen::Matrix<double, 3, 9>::Zero();  // Sum( Qi*Ai )
       
       for (size_t i = 0; i < n; i++)
       {
-        if (!_weights.empty())
-        {
-            weights_[i] = _weights.at(i);
-        }
-        const double& w = weights_.at(i);
-        points_.push_back( _3dpoints.at(i) );
-        projections_.push_back( _projections.at(i) );
+        const double w = weights_[i];
+        points_.emplace_back( _3dpoints[i] );
+        projections_.emplace_back( _projections[i] );
+
+        if (w == 0.0) continue;
 	
-        const double wx = projections_.rbegin()->vector[0] * w,
-               wy = projections_.rbegin()->vector[1] * w, 
-        wsq_norm_m = w*projections_.rbegin()->vector.squaredNorm();
+        const auto& proj_ = projections_[i].vector;
+        const double wx = proj_[0] * w,
+               wy = proj_[1] * w, 
+        wsq_norm_m = w*proj_.squaredNorm();
         sum_wx += wx;
         sum_wy += wy;
         sum_wx2_plus_wy2 += wsq_norm_m;
-        sum_w +=  w;
-        
-        double X = points_.rbegin()->vector[0],
-            Y = points_.rbegin()->vector[1],
-            Z = points_.rbegin()->vector[2];
-        sum_X += X;
-        sum_Y += Y;
-        sum_Z += Z;
+        sum_w += w;
+
+        const auto& pt_ = points_[i].vector;
+        double X = pt_[0],
+            Y = pt_[1],
+            Z = pt_[2];
+        sum_wX += w*X;
+        sum_wY += w*Y;
+        sum_wZ += w*Z;
 	
-        // Accumulate Omega by kronecker( Qi, Mi*Mi' ) = A'*Qi*Ai. NOTE: Skipping block (3:5, 3:5) because its same as (0:2, 0:2)
+        // Accumulate Omega by kronecker( Qi, Mi*Mi' ) = A'*Qi*Ai. NOTE: Skipping block (3:5, 3:5) because it's same as (0:2, 0:2)
         const double X2 = X*X, XY = X*Y, XZ = X*Z, Y2 = Y*Y, YZ = Y*Z, Z2 = Z*Z;
         
         // a. Block (0:2, 0:2) populated by Mi*Mi'. NOTE: Only upper triangle
@@ -123,26 +138,32 @@ namespace sqpnp
         
         // b. Block (0:2, 6:8) populated by -x*Mi*Mi'. NOTE: Only upper triangle
         Omega_(0, 6) += -wx*X2; Omega_(0, 7) += -wx*XY; Omega_(0, 8) += -wx*XZ;
-                                Omega_(1, 7) += -wx*Y2; Omega_(1, 8) += -wx*YZ;  
+                                Omega_(1, 7) += -wx*Y2; Omega_(1, 8) += -wx*YZ;
                                                         Omega_(2, 8) += -wx*Z2;
         // c. Block (3:5, 6:8) populated by -y*Mi*Mi'. NOTE: Only upper triangle
         Omega_(3, 6) += -wy*X2; Omega_(3, 7) += -wy*XY; Omega_(3, 8) += -wy*XZ;
-                                Omega_(4, 7) += -wy*Y2; Omega_(4, 8) += -wy*YZ;  
+                                Omega_(4, 7) += -wy*Y2; Omega_(4, 8) += -wy*YZ;
                                                         Omega_(5, 8) += -wy*Z2;
                                                         
         // d. Block (6:8, 6:8) populated by (x^2+y^2)*Mi*Mi'. NOTE: Only upper triangle
         Omega_(6, 6) += wsq_norm_m*X2; Omega_(6, 7) += wsq_norm_m*XY; Omega_(6, 8) += wsq_norm_m*XZ;
                                        Omega_(7, 7) += wsq_norm_m*Y2; Omega_(7, 8) += wsq_norm_m*YZ;
                                                                       Omega_(8, 8) += wsq_norm_m*Z2;
-									
-        // Accumulating Qi*Ai in QA
+
+        // Accumulating Qi*Ai in QA.
+        // Note that certain pairs of elements are equal, so we save some operations by filling them outside the loop
         const double wX = w*X,  wY = w*Y,  wZ = w*Z;
         QA(0, 0) += wX; QA(0, 1) += wY; QA(0, 2) += wZ; 	QA(0, 6) += -wx*X; QA(0, 7) += -wx*Y; QA(0, 8) += -wx*Z;
-        QA(1, 3) += wX; QA(1, 4) += wY; QA(1, 5) += wZ; 	QA(1, 6) += -wy*X; QA(1, 7) += -wy*Y; QA(1, 8) += -wy*Z;
+        //QA(1, 3) += wX; QA(1, 4) += wY; QA(1, 5) += wZ;
+                                                          QA(1, 6) += -wy*X; QA(1, 7) += -wy*Y; QA(1, 8) += -wy*Z;
         
-        QA(2, 0) += -wx*X; QA(2, 1) += -wx*Y; QA(2, 2) += -wx*Z; 	QA(2, 3) += -wy*X; QA(2, 4) += -wy*Y; QA(2, 5) += -wy*Z;
+        //QA(2, 0) += -wx*X; QA(2, 1) += -wx*Y; QA(2, 2) += -wx*Z; 	QA(2, 3) += -wy*X; QA(2, 4) += -wy*Y; QA(2, 5) += -wy*Z;
         QA(2, 6) += wsq_norm_m*X; QA(2, 7) += wsq_norm_m*Y; QA(2, 8) += wsq_norm_m*Z; 
       }
+      // Complete QA
+      QA(1, 3) = QA(0, 0); QA(1, 4) = QA(0, 1); QA(1, 5) = QA(0, 2);
+      QA(2, 0) = QA(0, 6); QA(2, 1) = QA(0, 7); QA(2, 2) = QA(0, 8);
+      QA(2, 3) = QA(1, 6); QA(2, 4) = QA(1, 7); QA(2, 5) = QA(1, 8);
       
       // Fill-in lower triangles of off-diagonal blocks (0:2, 6:8), (3:5, 6:8) and (6:8, 6:8)
       Omega_(1, 6) = Omega_(0, 7); Omega_(2, 6) = Omega_(0, 8); Omega_(2, 7) = Omega_(1, 8);
@@ -160,14 +181,13 @@ namespace sqpnp
       Omega_(4, 0) = Omega_(0, 4); Omega_(4, 1) = Omega_(1, 4); Omega_(4, 2) = Omega_(2, 4); Omega_(4, 3) = Omega_(3, 4);
       Omega_(5, 0) = Omega_(0, 5); Omega_(5, 1) = Omega_(1, 5); Omega_(5, 2) = Omega_(2, 5); Omega_(5, 3) = Omega_(3, 5); Omega_(5, 4) = Omega_(4, 5);
       Omega_(6, 0) = Omega_(0, 6); Omega_(6, 1) = Omega_(1, 6); Omega_(6, 2) = Omega_(2, 6); Omega_(6, 3) = Omega_(3, 6); Omega_(6, 4) = Omega_(4, 6); Omega_(6, 5) = Omega_(5, 6);
-      Omega_(7, 0) = Omega_(0, 7); Omega_(7, 1) = Omega_(1, 7); Omega_(7, 2) = Omega_(2, 7); Omega_(7, 3) = Omega_(3, 7); Omega_(7, 4) = Omega_(4, 7); Omega_(7, 5) = Omega_(5, 7); //Omega_(7, 6) = Omega_(6, 7);
+      Omega_(7, 0) = Omega_(0, 7); Omega_(7, 1) = Omega_(1, 7); Omega_(7, 2) = Omega_(2, 7); Omega_(7, 3) = Omega_(3, 7); Omega_(7, 4) = Omega_(4, 7); Omega_(7, 5) = Omega_(5, 7);
       Omega_(8, 0) = Omega_(0, 8); Omega_(8, 1) = Omega_(1, 8); Omega_(8, 2) = Omega_(2, 8); Omega_(8, 3) = Omega_(3, 8); Omega_(8, 4) = Omega_(4, 8); Omega_(8, 5) = Omega_(5, 8);
-      //Omega_(8, 6) = Omega_(6, 8); Omega_(8, 7) = Omega_(7, 8);
 
       // Q = Sum( wi*Qi ) = Sum( [ wi, 0, -wi*xi; 0, 1, -wi*yi; -wi*xi, -wi*yi, wi*(xi^2 + yi^2)] )
       Eigen::Matrix<double, 3, 3> Q;
-      Q(0, 0) = sum_w;     Q(0, 1) = 0;         Q(0, 2) = -sum_wx;
-      Q(1, 0) = 0;         Q(1, 1) = sum_w;     Q(1, 2) = -sum_wy;
+      Q(0, 0) = sum_w;     Q(0, 1) = 0.0;       Q(0, 2) = -sum_wx;
+      Q(1, 0) = 0.0;       Q(1, 1) = sum_w;     Q(1, 2) = -sum_wy;
       Q(2, 0) = -sum_wx;   Q(2, 1) = -sum_wy;   Q(2, 2) = sum_wx2_plus_wy2; 
       
       // Qinv = inv( Q ) = inv( Sum( Qi) )
@@ -187,34 +207,34 @@ namespace sqpnp
 #else
       // Omega is self-adjoint, hence decomposes as U*D*Ut . This is faster than SVD
       Eigen::SelfAdjointEigenSolver<Eigen::Matrix<double, 9, 9>> evd(Omega_);
+
       // evals are in increasing order, reorder them so that they decrease
       U_ = evd.eigenvectors().rowwise().reverse();
       //U_ = evd.eigenvectors(); for (int i = 0; i < 4; ++i) U_.col(i).swap(U_.col(8-i));
 
       s_ = evd.eigenvalues();
-      std::swap(s_[0], s_[8]);
-      std::swap(s_[1], s_[7]);
-      std::swap(s_[2], s_[6]);
-      std::swap(s_[3], s_[5]);
+      s_.reverseInPlace();
 #endif
-  
-      // Find dimension of null space
-      while (s_[7 - num_null_vectors_] < _parameters.rank_tolerance) num_null_vectors_++;
+
+      // Find dimension of null space; the check guards against overly large rank_tolerance
+      while (7 - num_null_vectors_ >= 0 && s_[7 - num_null_vectors_] < _parameters.rank_tolerance) num_null_vectors_++;
+      //while (s_[7 - num_null_vectors_] < _parameters.rank_tolerance) num_null_vectors_++;
+
       // Dimension of null space of Omega must be <= 6
       if (++num_null_vectors_ > 6) 
       {
           flag_valid_ = false;
       }
       
-      // 3D point mean (for cheirality checks)
-      const double inv_n = 1.0 / n;
-      point_mean_ << sum_X*inv_n, sum_Y*inv_n, sum_Z*inv_n;
+      // 3D point weighted mean (for quick cheirality checks)
+      const double inv_sum_w = 1.0 / sum_w;
+      point_mean_ << sum_wX*inv_sum_w, sum_wY*inv_sum_w, sum_wZ*inv_sum_w;
       
       // Assign nearest rotation method
       if ( parameters_.nearest_rotation_method == NearestRotationMethod::FOAM )
       {
           NearestRotationMatrix = NearestRotationMatrix_FOAM;
-      } 
+      }
       else // if ( parameters_.nearest_rotation_method == NearestRotationMethod::SVD )
       {
           NearestRotationMatrix = NearestRotationMatrix_SVD;
@@ -245,7 +265,7 @@ namespace sqpnp
     SQPSolution solutions_[18];
     int num_solutions_;
     
-    // Nearest rotration matrix function. By default, the FOAM method
+    // Nearest rotation matrix function. By default, the FOAM method
     std::function<void(const Eigen::Matrix<double, 9, 1>&, Eigen::Matrix<double, 9, 1>&)> NearestRotationMatrix;
     
     //
@@ -260,20 +280,27 @@ namespace sqpnp
     void HandleSolution(SQPSolution& solution, double& min_sq_error);
 	
     //
-    // Average Squared Projection Error of a given Solution
+    // Average squared projection error of a given solution
     inline double AverageSquaredProjectionError(const int index) const
     {
-      double avg = 0;
+      double avg = 0.0;
       const auto& r = solutions_[index].r_hat;
       const auto& t = solutions_[index].t;
       
       for (unsigned int i = 0; i < points_.size(); i++)
       {
-	double Xc     =       r[0]*points_.at(i).vector[0] + r[1]*points_.at(i).vector[1] + r[2]*points_.at(i).vector[2] + t[0], 
-	       Yc     =       r[3]*points_.at(i).vector[0] + r[4]*points_.at(i).vector[1] + r[5]*points_.at(i).vector[2] + t[1], 
-	       inv_Zc = 1 / ( r[6]*points_.at(i).vector[0] + r[7]*points_.at(i).vector[1] + r[8]*points_.at(i).vector[2] + t[2] );
-	avg += ( Xc*inv_Zc - projections_.at(i).vector[0] ) * ( Xc*inv_Zc - projections_.at(i).vector[0] ) +
-	       ( Yc*inv_Zc - projections_.at(i).vector[1] ) * ( Yc*inv_Zc - projections_.at(i).vector[1] );
+	const auto& M = points_[i].vector;
+	const double Xc     =         r[0]*M[0] + r[1]*M[1] + r[2]*M[2] + t[0], 
+
+	       Yc     =         r[3]*M[0] + r[4]*M[1] + r[5]*M[2] + t[1], 
+	       inv_Zc = 1.0 / ( r[6]*M[0] + r[7]*M[1] + r[8]*M[2] + t[2] );
+
+	const auto& m = projections_[i].vector;
+	const double dx = Xc*inv_Zc - m[0];
+
+	const double dy = Yc*inv_Zc - m[1];
+
+	avg += dx*dx + dy*dy;
       }
       
       return avg / points_.size();
@@ -298,7 +325,9 @@ namespace sqpnp
       const auto& t = solution.t;
       int npos = 0, nneg = 0;
 
-      for (unsigned int i = 0; i < points_.size(); i++) {
+      for (size_t i = 0; i < points_.size(); i++) {
+
+        if ( weights_[i] == 0.0) continue;
         const auto& M = points_[i].vector;
         if ( r[6]*M[0] + r[7]*M[1] + r[8]*M[2] + t[2] > 0 ) ++npos;
         else ++nneg;
@@ -309,7 +338,7 @@ namespace sqpnp
     }
     
     //
-    // Determinant of 3x3 matrix stored as a 9x1 vector in a vector in ROW-MAJOR order
+    // Determinant of 3x3 matrix stored as a 9x1 vector in *row-major* order
     inline static double Determinant9x1(const Eigen::Matrix<double, 9, 1>& r)
     {
       return r[0]*r[4]*r[8] + r[1]*r[5]*r[6] + r[2]*r[3]*r[7] - r[6]*r[4]*r[2] - r[7]*r[5]*r[0] - r[8]*r[3]*r[1];
@@ -322,7 +351,7 @@ namespace sqpnp
     }
     
     //
-    // Invert a 3x3 symmetrix matrix (using low triangle values only)
+    // Invert a 3x3 symmetric matrix (using low triangle values only)
     inline static bool InvertSymmetric3x3(const Eigen::Matrix<double, 3, 3> Q, 
 					  Eigen::Matrix<double, 3, 3>& Qinv, 
 					  const double& det_threshold = 1e-8
@@ -360,8 +389,8 @@ namespace sqpnp
       return true;
     }
     
-    // Simple SVD - based nearest rotation matrix. Argument should be a ROW-MAJOR matrix representation.
-    // Returns a ROW-MAJOR vector representation of the nearest rotation matrix.
+    // Simple SVD - based nearest rotation matrix. Argument should be a *row-major* matrix representation.
+    // Returns a row-major vector representation of the nearest rotation matrix.
     inline static void NearestRotationMatrix_SVD(const Eigen::Matrix<double, 9, 1>& e, Eigen::Matrix<double, 9, 1>& r)
     {
       //const Eigen::Matrix<double, 3, 3> E = e.reshaped(3, 3); 
@@ -374,6 +403,7 @@ namespace sqpnp
     }
 
     // Faster nearest rotation computation based on FOAM. See M. Lourakis: "An Efficient Solution to Absolute Orientation", ICPR 2016
+    // and M. Lourakis, G. Terzakis: "Efficient Absolute Orientation Revisited", IROS 2018.
     /* Solve the nearest orthogonal approximation problem
      * i.e., given B, find R minimizing ||R-B||_F
      *

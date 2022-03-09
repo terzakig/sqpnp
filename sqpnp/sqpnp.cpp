@@ -6,8 +6,8 @@
 // Implementation of SQPnP as described in the paper:
 //
 // "A Consistently Fast and Globally Optimal Solution to the Perspective-n-Point Problem" by G. Terzakis and M. Lourakis
-//  	 a) Paper: 	   http://www.ecva.net/papers/eccv_2020/papers_ECCV/papers/123460460.pdf 
-//       b) Supplementary: https://www.ecva.net/papers/eccv_2020/papers_ECCV/papers/123460460.pdf
+//     a) Paper:         https://www.ecva.net/papers/eccv_2020/papers_ECCV/papers/123460460.pdf
+//     b) Supplementary: https://www.ecva.net/papers/eccv_2020/papers_ECCV/papers/123460460-supp.pdf
 
 #include <sqpnp.h>
 
@@ -24,7 +24,7 @@ namespace sqpnp
   const double SolverParameters::DEFAULT_POINT_VARIANCE_THRESHOLD = 1e-5;
   
     
-  const double PnPSolver::SQRT3 = std::sqrt(3);
+  const double PnPSolver::SQRT3 = std::sqrt(3.0);
   
   
   void PnPSolver::HandleSolution(SQPSolution& solution, double& min_sq_error)
@@ -215,7 +215,7 @@ namespace sqpnp
     x[4] = ( g[4] - JH(4, 1)*x[1] - JH(4, 2)*x[2] - JH(4, 3)*x[3] ) / JH(4, 4);
     x[5] = ( g[5] - JH(5, 0)*x[0] - JH(5, 2)*x[2] - JH(5, 3)*x[3] - JH(5, 4)*x[4] ) / JH(5, 5);
     
-    // Now obtain the component of delta in the row space of E as delta_h = Q'*x and assign straint into delta
+    // Now obtain the component of delta in the row space of E as delta_h = Q'*x and assign straight into delta
     delta = H * x;
     
     // Finally, solve for y from W*y = ksi , where matrix W and vector ksi are :

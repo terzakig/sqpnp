@@ -1,4 +1,5 @@
 #include <iostream>
+#include <cmath>
 #include <sqpnp.h>
 #include <opencv2/core.hpp>
 #include <vector>
@@ -88,6 +89,28 @@ void GenerateSyntheticPoints(int n,
     t = -R*pos;
 }
 
+// compute the translational and angular error between the pose R,t contained in an SQPnP solution and the (true) pose Rg,tg
+static void poseError(const sqpnp::SQPSolution& solution, const cv::Matx<double, 3, 3>& Rg, const cv::Vec<double, 3>& tg, double& terr, double& aerr)
+{
+    // translational error
+    double a = tg(0) - solution.t(0);
+    double b = tg(1) - solution.t(1);
+    double c = tg(2) - solution.t(2);
+    terr = sqrt(a*a + b*b + c*c);
+
+    /* angular error, defined as the amount of rotation about a unit vector that transfers Rg to R.
+     * The (residual) angle is computed with the inverse Rodrigues rotation formula
+     */
+
+    // compute trc as the trace of Rg'*R
+    a = Rg(0, 0)*solution.r_hat[0] + Rg(1, 0)*solution.r_hat[3] + Rg(2, 0)*solution.r_hat[6];
+    b = Rg(0, 1)*solution.r_hat[1] + Rg(1, 1)*solution.r_hat[4] + Rg(2, 1)*solution.r_hat[7];
+    c = Rg(0, 2)*solution.r_hat[2] + Rg(1, 2)*solution.r_hat[5] + Rg(2, 2)*solution.r_hat[8];
+    const double trc = a + b + c;
+    a = 0.5*(trc - 1.0);
+    aerr = acos(std::min(std::max(-1.0, a), 1.0)); // clamp to [-1, 1]
+}
+
 
 int main()
 {
@@ -141,9 +164,14 @@ int main()
   
   for (int i = 0; i < N; i++)
   {
+    double terr, aerr;
+
     std::cout << i << "-th Solution : " << solutions.at(i);
     std::cout << i << "-th Rt : " << vRt.at(i) << std::endl;
-    std::cout << i << "-th tt : " << vtt.at(i) << "\n\n";
+    std::cout << i << "-th tt : " << vtt.at(i) << "\n";
+
+    poseError(solutions.at(i), vRt.at(i), vtt.at(i), terr, aerr);
+    std::cout << i << " translational error : " << terr <<  "  angular error : " << aerr*180.0/3.14159 << "\n\n";
   }
   
   auto diff = finish - start;
