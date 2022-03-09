@@ -297,7 +297,8 @@ namespace sqpnp
 	const auto& m = projections_[i].vector;
 	const double dx = Xc*inv_Zc - m[0];
 
-	double dy = Yc*inv_Zc - m[1];
+	const double dy = Yc*inv_Zc - m[1];
+
 	avg += dx*dx + dy*dy;
       }
       
