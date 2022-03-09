@@ -28,7 +28,7 @@ namespace sqpnp
   // Euclidean projection
   struct _Projection
   {
-    Eigen::Matrix<double, 2, 1, Eigen::DontAlign> vector; // for older compilers, this might need to be declared as Eigen::Matrix<double, 2, 1, Eigen::DontAlign>
+    Eigen::Matrix<double, 2, 1> vector; // for older compilers, this might need to be declared as Eigen::Matrix<double, 2, 1, Eigen::DontAlign>
     
     inline _Projection() : vector(Eigen::Matrix<double, 2, 1>(0, 0)) {}
     
