@@ -123,7 +123,7 @@ static void readCalibParams(char *fname, double K[9])
   }
 
   while(!feof(fp) && (ch=fgetc(fp))=='#') /* skip comments */
-    fgets(buf, MAXSTRLEN-1, fp);
+    (void)!fgets(buf, MAXSTRLEN-1, fp);
 
   if(feof(fp)){
     fclose(fp);
@@ -216,7 +216,7 @@ int main(int argc, char *argv[])
 
   robust_pose_pnp::PoseEstimator rpe(&pts3D, &pts2D, 4 /*3*/, 50);
   //rpe.set_sample_sizes(4, 30); // changes sample sizes dynamically
-  rpe.ransacfit(0.8, 0.01, bestRt, nullptr, &outidx);
+  rpe.ransacfit(20, 200, 0.8, 0.01, bestRt, nullptr, &outidx);
 
   stop = std::chrono::high_resolution_clock::now();
 

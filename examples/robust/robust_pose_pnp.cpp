@@ -30,11 +30,11 @@ PoseEstimator::PoseEstimator(const std::vector<sqpnp::_Point> *_3dpoints, const 
 // Robustly solves for camera pose lambda*x = R*X+t  with lambda > 0.
 // Inlier and outlier indices are optionally returned (in increasing order) in idxInliers & idxOutliers.
 // Returns 0 if successful, zero otherwise
-int PoseEstimator::ransacfit(double inlPcent, double outlThresh, robust_pose_pnp::Matrix34d& best_pose, std::vector<int> *idxInliers, std::vector<int> *idxOutliers) const {
+int PoseEstimator::ransacfit(int miniter, int maxiter, double inlPcent, double outlThresh, robust_pose_pnp::Matrix34d& best_pose, std::vector<int> *idxInliers, std::vector<int> *idxOutliers) const {
   ransac_lib::LORansacOptions options;
 
-  options.min_num_iterations_ = 100u;
-  options.max_num_iterations_ = 10000u;
+  options.min_num_iterations_ = (unsigned int)miniter;
+  options.max_num_iterations_ = (unsigned int)maxiter;
   // make sure that min_num_iterations_ are at least as many as predicted for the given outlier ratio and sample size
   options.min_num_iterations_ = ransac_lib::utils::NumRequiredIterations(inlPcent, 1.0-0.99, samplesz_, options.min_num_iterations_, options.max_num_iterations_);
   options.squared_inlier_threshold_ = outlThresh * outlThresh;

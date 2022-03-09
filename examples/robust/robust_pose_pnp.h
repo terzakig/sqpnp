@@ -29,9 +29,9 @@ class PoseEstimator {
  public:
   PoseEstimator(const std::vector<sqpnp::_Point> *_3dpoints, const std::vector<sqpnp::_Projection> *_projections, int samplesz, int nm_samplesz = 30);
 
-  // Estimates pose with RANSAC and supplied inlier percentage and outlier threshold.
+  // Estimates pose with RANSAC and supplied min-max #iterations, inlier percentage and outlier threshold.
   // If requested, fills in inlier and outlier indices
-  int ransacfit(double inlPcent, double outlThresh, robust_pose_pnp::Matrix34d& best_pose, std::vector<int> *idxInliers = nullptr, std::vector<int> *idxOutliers = nullptr) const;
+  int ransacfit(int miniter, int maxiter, double inlPcent, double outlThresh, robust_pose_pnp::Matrix34d& best_pose, std::vector<int> *idxInliers = nullptr, std::vector<int> *idxOutliers = nullptr) const;
 
   // sets sample sizes
   inline void set_sample_sizes(int samplesz, int nm_samplesz) {
