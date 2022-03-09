@@ -295,7 +295,8 @@ namespace sqpnp
 	       inv_Zc = 1.0 / ( r[6]*M[0] + r[7]*M[1] + r[8]*M[2] + t[2] );
 
 	const auto& m = projections_[i].vector;
-	double dx = Xc*inv_Zc - m[0];
+	const double dx = Xc*inv_Zc - m[0];
+
 	double dy = Yc*inv_Zc - m[1];
 	avg += dx*dx + dy*dy;
       }
