@@ -10,3 +10,6 @@ For more advanced pose estimation (e.g., a non-linear refinement on the inliers,
 
 ## Running
 ./robust_sqpnp_example  data/K.txt  data/32D.txt
+
+## Caveat
+RANSAC parameters such as the inlier percentage, outlier threshold, number of iterations, etc should be tuned to your particular problem!
