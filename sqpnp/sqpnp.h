@@ -416,20 +416,26 @@ namespace sqpnp
      */
     inline static void NearestRotationMatrix_FOAM(const Eigen::Matrix<double, 9, 1>& e, Eigen::Matrix<double, 9, 1>& r)
     {
-    register int i;
-    register const double *B=e.data();
+    int i;
+    const double *B=e.data();
     double l, lprev, detB, Bsq, adjBsq, adjB[9];
 
       //double B[9];
       //Eigen::Map<Eigen::Matrix<double, 9, 1>>(B, 9, 1)=e;  // this creates a copy
+
+      // det(B)
+      detB=B[0]*B[4]*B[8] - B[0]*B[5]*B[7] - B[1]*B[3]*B[8] + B[2]*B[3]*B[7] + B[1]*B[6]*B[5] - B[2]*B[6]*B[4];
+      if(fabs(detB)<1E-04){ // singular, let SVD handle it
+        NearestRotationMatrix_SVD(e, r);
+        return;
+      }
 
       // B's adjoint
       adjB[0]=B[4]*B[8] - B[5]*B[7]; adjB[1]=B[2]*B[7] - B[1]*B[8]; adjB[2]=B[1]*B[5] - B[2]*B[4];
       adjB[3]=B[5]*B[6] - B[3]*B[8]; adjB[4]=B[0]*B[8] - B[2]*B[6]; adjB[5]=B[2]*B[3] - B[0]*B[5];
       adjB[6]=B[3]*B[7] - B[4]*B[6]; adjB[7]=B[1]*B[6] - B[0]*B[7]; adjB[8]=B[0]*B[4] - B[1]*B[3];
 
-      // det(B), ||B||^2, ||adj(B)||^2
-      detB=B[0]*B[4]*B[8] - B[0]*B[5]*B[7] - B[1]*B[3]*B[8] + B[2]*B[3]*B[7] + B[1]*B[6]*B[5] - B[2]*B[6]*B[4];
+      // ||B||^2, ||adj(B)||^2
       Bsq=B[0]*B[0]+B[1]*B[1]+B[2]*B[2] + B[3]*B[3]+B[4]*B[4]+B[5]*B[5] + B[6]*B[6]+B[7]*B[7]+B[8]*B[8];
       adjBsq=adjB[0]*adjB[0]+adjB[1]*adjB[1]+adjB[2]*adjB[2] + adjB[3]*adjB[3]+adjB[4]*adjB[4]+adjB[5]*adjB[5] + adjB[6]*adjB[6]+adjB[7]*adjB[7]+adjB[8]*adjB[8];
 
