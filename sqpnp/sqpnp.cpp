@@ -17,6 +17,7 @@ namespace sqpnp
   const double SolverParameters::DEFAULT_RANK_TOLERANCE = 1e-7;
   const double SolverParameters::DEFAULT_SQP_SQUARED_TOLERANCE = 1e-10;
   const double SolverParameters::DEFAULT_SQP_DET_THRESHOLD = 1.001;
+  const OmegaNullspaceMethod  SolverParameters::DEFAULT_OMEGA_NULLSPACE_METHOD = OmegaNullspaceMethod::RRQR;
   const NearestRotationMethod SolverParameters::DEFAULT_NEAREST_ROTATION_METHOD = NearestRotationMethod::FOAM;
   const double SolverParameters::DEFAULT_ORTHOGONALITY_SQUARED_ERROR_THRESHOLD = 1e-8;
   const double SolverParameters::DEFAULT_EQUAL_VECTORS_SQUARED_DIFF = 1e-10;
@@ -110,11 +111,9 @@ namespace sqpnp
       }
     }
 
-    int c = 1;
-    while (min_sq_error > 3 * s_[9 - num_eigen_points - c] && 9 - num_eigen_points - c > 0) 
+    int index, c = 1;
+    while ((index = 9 - num_eigen_points - c) > 0 && min_sq_error > 3 * s_[index]) 
     {      
-      int index = 9 - num_eigen_points - c;
-
       const Eigen::Matrix<double, 9, 1> e = Eigen::Map<Eigen::Matrix<double, 9, 1>>( U_.block<9, 1>(0, index).data() );
       SQPSolution solution[2];
       
