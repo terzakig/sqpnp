@@ -174,7 +174,8 @@ namespace sqpnp
       Omega_(3, 3) = Omega_(0, 0); Omega_(3, 4) = Omega_(0, 1); Omega_(3, 5) = Omega_(0, 2);
                                    Omega_(4, 4) = Omega_(1, 1); Omega_(4, 5) = Omega_(1, 2);
                                                                 Omega_(5, 5) = Omega_(2, 2);
-      // Fill lower triangle of Omega
+
+      // Fill lower triangle of Omega; elements (7, 6), (8, 6) & (8, 7) have already been assigned above
       Omega_(1, 0) = Omega_(0, 1);
       Omega_(2, 0) = Omega_(0, 2); Omega_(2, 1) = Omega_(1, 2);
       Omega_(3, 0) = Omega_(0, 3); Omega_(3, 1) = Omega_(1, 3); Omega_(3, 2) = Omega_(2, 3);
@@ -312,7 +313,6 @@ namespace sqpnp
       const auto& t = solution.t;
       const auto& M = point_mean_;
       return ( r[6]*M[0] + r[7]*M[1] + r[8]*M[2] + t[2] > 0 );
-	
     }
 
     //
@@ -331,7 +331,6 @@ namespace sqpnp
       }
 
       return npos >= nneg;
-	
     }
     
     //
@@ -368,7 +367,7 @@ namespace sqpnp
       t12 = c*c;
       double det = -t4*f+a*t2+t7*f-2.0*t9*e+t12*d;
       
-      if ( fabs(det) < det_threshold ) { Qinv=Q.completeOrthogonalDecomposition().pseudoInverse(); return true; } // fall back to pseudoinverse
+      if ( fabs(det) < det_threshold ) { Qinv=Q.completeOrthogonalDecomposition().pseudoInverse(); return false; } // fall back to pseudoinverse
  
       // 3. Inverse
       double t15, t20, t24, t30;
@@ -523,9 +522,8 @@ namespace sqpnp
 				      Eigen::Matrix<double, 9, 6>& H, 
 				      Eigen::Matrix<double, 9, 3>& N,
 				      Eigen::Matrix<double, 6, 6>& K,
-				const double& norm_threhsold = 0.1 );
-    
-    
+				const double& norm_threhsold = 0.1 ); 
+   
   };
   
 
