@@ -222,6 +222,7 @@ namespace sqpnp
       // Find dimension of null space; the check guards against overly large rank_tolerance
       while (7 - num_null_vectors_ >= 0 && s_[7 - num_null_vectors_] < _parameters.rank_tolerance) num_null_vectors_++;
       //while (s_[7 - num_null_vectors_] < _parameters.rank_tolerance) num_null_vectors_++;
+
       // Dimension of null space of Omega must be <= 6
       if (++num_null_vectors_ > 6) 
       {
@@ -522,7 +523,7 @@ namespace sqpnp
 				      Eigen::Matrix<double, 9, 6>& H, 
 				      Eigen::Matrix<double, 9, 3>& N,
 				      Eigen::Matrix<double, 6, 6>& K,
-				const double& norm_threhsold = 0.1 ); 
+				const double& norm_threshold = 0.1 ); 
    
   };
   
