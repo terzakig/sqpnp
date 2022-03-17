@@ -528,7 +528,7 @@ namespace sqpnp
 				      Eigen::Matrix<double, 9, 6>& H, 
 				      Eigen::Matrix<double, 9, 3>& N,
 				      Eigen::Matrix<double, 6, 6>& K,
-				const double& norm_threshold = 0.1 );
+				const double& norm_threhsold = 0.1 );
     
     
   };
