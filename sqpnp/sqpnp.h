@@ -174,7 +174,8 @@ namespace sqpnp
       Omega_(3, 3) = Omega_(0, 0); Omega_(3, 4) = Omega_(0, 1); Omega_(3, 5) = Omega_(0, 2);
                                    Omega_(4, 4) = Omega_(1, 1); Omega_(4, 5) = Omega_(1, 2);
                                                                 Omega_(5, 5) = Omega_(2, 2);
-      // Fill lower triangle of Omega
+
+      // Fill lower triangle of Omega; elements (7, 6), (8, 6) & (8, 7) have already been assigned above
       Omega_(1, 0) = Omega_(0, 1);
       Omega_(2, 0) = Omega_(0, 2); Omega_(2, 1) = Omega_(1, 2);
       Omega_(3, 0) = Omega_(0, 3); Omega_(3, 1) = Omega_(1, 3); Omega_(3, 2) = Omega_(2, 3);
@@ -199,22 +200,24 @@ namespace sqpnp
       // Complete Omega (i.e., Omega = Sum(A'*Qi*A') + Sum(Qi*Ai)'*P = Sum(A'*Qi*A') + Sum(Qi*Ai)'*inv(Sum(Qi))*Sum( Qi*Ai) 
       Omega_ +=  QA.transpose()*P_;
       
-      // Finally, decompose Omega
-#if 0
-      Eigen::JacobiSVD<Eigen::Matrix<double, 9, 9>> svd(Omega_, Eigen::ComputeFullU);
-      U_ = svd.matrixU();
-      s_ = svd.singularValues();
-#else
-      // Omega is self-adjoint, hence decomposes as U*D*Ut . This is faster than SVD
-      Eigen::SelfAdjointEigenSolver<Eigen::Matrix<double, 9, 9>> evd(Omega_);
+      // Finally, decompose Omega with the chosen method
+      if ( parameters_.omega_nullspace_method == OmegaNullspaceMethod::RRQR )
+      {
+        // Rank revealing QR nullspace computation. This is slightly less accurate compared to SVD but x2 faster
+        Eigen::FullPivHouseholderQR<Eigen::Matrix<double, 9, 9> > rrqr(9, 9);
+        rrqr.compute(Omega_);
+        U_ = rrqr.matrixQ();
 
-      // evals are in increasing order, reorder them so that they decrease
-      U_ = evd.eigenvectors().rowwise().reverse();
-      //U_ = evd.eigenvectors(); for (int i = 0; i < 4; ++i) U_.col(i).swap(U_.col(8-i));
-
-      s_ = evd.eigenvalues();
-      s_.reverseInPlace();
-#endif
+        Eigen::Matrix<double, 9, 9> R = rrqr.matrixQR().template triangularView<Eigen::Upper>();
+        s_ = R.diagonal().array().abs();
+      }
+      else // if ( parameters_.omega_nullspace_method == OmegaNullspaceMethod::SVD )
+      {
+        // SVD-based nullspace computation. This is the most accurate but slowest option
+        Eigen::JacobiSVD<Eigen::Matrix<double, 9, 9>> svd(Omega_, Eigen::ComputeFullU);
+        U_ = svd.matrixU();
+        s_ = svd.singularValues();
+      }
 
       // Find dimension of null space; the check guards against overly large rank_tolerance
       while (7 - num_null_vectors_ >= 0 && s_[7 - num_null_vectors_] < _parameters.rank_tolerance) num_null_vectors_++;
@@ -229,7 +232,7 @@ namespace sqpnp
       // 3D point weighted mean (for quick cheirality checks)
       const double inv_sum_w = 1.0 / sum_w;
       point_mean_ << sum_wX*inv_sum_w, sum_wY*inv_sum_w, sum_wZ*inv_sum_w;
-      
+       
       // Assign nearest rotation method
       if ( parameters_.nearest_rotation_method == NearestRotationMethod::FOAM )
       {
@@ -287,19 +290,16 @@ namespace sqpnp
       const auto& r = solutions_[index].r_hat;
       const auto& t = solutions_[index].t;
       
-      for (unsigned int i = 0; i < points_.size(); i++)
+      for (size_t i = 0; i < points_.size(); i++)
       {
 	const auto& M = points_[i].vector;
 	const double Xc     =         r[0]*M[0] + r[1]*M[1] + r[2]*M[2] + t[0], 
-
 	       Yc     =         r[3]*M[0] + r[4]*M[1] + r[5]*M[2] + t[1], 
 	       inv_Zc = 1.0 / ( r[6]*M[0] + r[7]*M[1] + r[8]*M[2] + t[2] );
 
 	const auto& m = projections_[i].vector;
 	const double dx = Xc*inv_Zc - m[0];
-
 	const double dy = Yc*inv_Zc - m[1];
-
 	avg += dx*dx + dy*dy;
       }
       
@@ -314,7 +314,6 @@ namespace sqpnp
       const auto& t = solution.t;
       const auto& M = point_mean_;
       return ( r[6]*M[0] + r[7]*M[1] + r[8]*M[2] + t[2] > 0 );
-	
     }
 
     //
@@ -326,7 +325,6 @@ namespace sqpnp
       int npos = 0, nneg = 0;
 
       for (size_t i = 0; i < points_.size(); i++) {
-
         if ( weights_[i] == 0.0) continue;
         const auto& M = points_[i].vector;
         if ( r[6]*M[0] + r[7]*M[1] + r[8]*M[2] + t[2] > 0 ) ++npos;
@@ -334,7 +332,6 @@ namespace sqpnp
       }
 
       return npos >= nneg;
-	
     }
     
     //
@@ -354,7 +351,7 @@ namespace sqpnp
     // Invert a 3x3 symmetric matrix (using low triangle values only)
     inline static bool InvertSymmetric3x3(const Eigen::Matrix<double, 3, 3> Q, 
 					  Eigen::Matrix<double, 3, 3>& Qinv, 
-					  const double& det_threshold = 1e-8
+					  const double& det_threshold = 1e-10
 					 )
     {
       // 1. Get the elements of the matrix
@@ -371,7 +368,7 @@ namespace sqpnp
       t12 = c*c;
       double det = -t4*f+a*t2+t7*f-2.0*t9*e+t12*d;
       
-      if ( fabs(det) < det_threshold ) return false;
+      if ( fabs(det) < det_threshold ) { Qinv=Q.completeOrthogonalDecomposition().pseudoInverse(); return false; } // fall back to pseudoinverse
  
       // 3. Inverse
       double t15, t20, t24, t30;
@@ -389,6 +386,7 @@ namespace sqpnp
       return true;
     }
     
+
     // Simple SVD - based nearest rotation matrix. Argument should be a *row-major* matrix representation.
     // Returns a row-major vector representation of the nearest rotation matrix.
     inline static void NearestRotationMatrix_SVD(const Eigen::Matrix<double, 9, 1>& e, Eigen::Matrix<double, 9, 1>& r)
@@ -419,9 +417,6 @@ namespace sqpnp
     int i;
     const double *B=e.data();
     double l, lprev, detB, Bsq, adjBsq, adjB[9];
-
-      //double B[9];
-      //Eigen::Map<Eigen::Matrix<double, 9, 1>>(B, 9, 1)=e;  // this creates a copy
 
       // det(B)
       detB=B[0]*B[4]*B[8] - B[0]*B[5]*B[7] - B[1]*B[3]*B[8] + B[2]*B[3]*B[7] + B[1]*B[6]*B[5] - B[2]*B[6]*B[4];
@@ -528,9 +523,8 @@ namespace sqpnp
 				      Eigen::Matrix<double, 9, 6>& H, 
 				      Eigen::Matrix<double, 9, 3>& N,
 				      Eigen::Matrix<double, 6, 6>& K,
-				const double& norm_threhsold = 0.1 );
-    
-    
+				const double& norm_threshold = 0.1 ); 
+   
   };
   
 
