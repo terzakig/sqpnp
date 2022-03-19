@@ -121,9 +121,10 @@ namespace sqpnp
         double X = pt_[0],
             Y = pt_[1],
             Z = pt_[2];
-        sum_wX += w*X;
-        sum_wY += w*Y;
-        sum_wZ += w*Z;
+        const double wX = w * X,  wY = w * Y,  wZ = w * Z;
+        sum_wX += wX;
+        sum_wY += wY;
+        sum_wZ += wZ;
 	
         // Accumulate Omega by kronecker( Qi, Mi*Mi' ) = A'*Qi*Ai. NOTE: Skipping block (3:5, 3:5) because it's same as (0:2, 0:2)
         const double X2 = X*X, XY = X*Y, XZ = X*Z, Y2 = Y*Y, YZ = Y*Z, Z2 = Z*Z;
@@ -140,6 +141,7 @@ namespace sqpnp
         Omega_(0, 6) += -wx*X2; Omega_(0, 7) += -wx*XY; Omega_(0, 8) += -wx*XZ;
                                 Omega_(1, 7) += -wx*Y2; Omega_(1, 8) += -wx*YZ;
                                                         Omega_(2, 8) += -wx*Z2;
+
         // c. Block (3:5, 6:8) populated by -y*Mi*Mi'. NOTE: Only upper triangle
         Omega_(3, 6) += -wy*X2; Omega_(3, 7) += -wy*XY; Omega_(3, 8) += -wy*XZ;
                                 Omega_(4, 7) += -wy*Y2; Omega_(4, 8) += -wy*YZ;
@@ -152,7 +154,6 @@ namespace sqpnp
 
         // Accumulating Qi*Ai in QA.
         // Note that certain pairs of elements are equal, so we save some operations by filling them outside the loop
-        const double wX = w*X,  wY = w*Y,  wZ = w*Z;
         QA(0, 0) += wX; QA(0, 1) += wY; QA(0, 2) += wZ; 	QA(0, 6) += -wx*X; QA(0, 7) += -wx*Y; QA(0, 8) += -wx*Z;
         //QA(1, 3) += wX; QA(1, 4) += wY; QA(1, 5) += wZ;
                                                           QA(1, 6) += -wy*X; QA(1, 7) += -wy*Y; QA(1, 8) += -wy*Z;
@@ -204,8 +205,7 @@ namespace sqpnp
       if ( parameters_.omega_nullspace_method == OmegaNullspaceMethod::RRQR )
       {
         // Rank revealing QR nullspace computation. This is slightly less accurate compared to SVD but x2 faster
-        Eigen::FullPivHouseholderQR<Eigen::Matrix<double, 9, 9> > rrqr(9, 9);
-        rrqr.compute(Omega_);
+        Eigen::FullPivHouseholderQR<Eigen::Matrix<double, 9, 9> > rrqr(Omega_);
         U_ = rrqr.matrixQ();
 
         Eigen::Matrix<double, 9, 9> R = rrqr.matrixQR().template triangularView<Eigen::Upper>();
