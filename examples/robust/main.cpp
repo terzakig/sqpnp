@@ -16,6 +16,7 @@
 //
 
 #include <cstdio>
+#include <cstring>
 #include <vector>
 #include <iostream>
 #include <chrono>
@@ -29,11 +30,11 @@
 #define MAXSTRLEN 1024
 
 /* read matching points from a file and normalize the projections */
-static int readMatchingPoints(char *fname, Eigen::Matrix<double, 3, 3>& K1, std::vector<sqpnp::_Projection>& pts2D, std::vector<sqpnp::_Point>& pts3D)
+static int readMatchingPoints(char *fname, std::vector<sqpnp::_Projection>& pts2D, std::vector<sqpnp::_Point>& pts3D)
 {
 register int i;
 int ncoords, nmatches;
-double X, Y, Z, x, y, nx, ny;
+double X, Y, Z, x, y;
 FILE *fp;
 char buf[MAXSTRLEN], *ptr;
 long int fpos;
@@ -94,10 +95,7 @@ long int fpos;
     }
 
     pts3D.emplace_back(X, Y, Z);
-
-    nx=K1(0, 0)*x + K1(0, 1)*y + K1(0, 2);
-    ny=K1(1, 0)*x + K1(1, 1)*y + K1(1, 2);
-    pts2D.emplace_back(nx, ny);
+    pts2D.emplace_back(x, y);
   }
   fclose(fp);
 
@@ -149,16 +147,18 @@ int main(int argc, char *argv[])
 {
   std::vector<sqpnp::_Point> pts3D;
   std::vector<sqpnp::_Projection> pts2D;
+  std::vector<sqpnp::_Projection> npts2D; // normalized
 
-  int npts;
+  int numpts;
   char *icalfile, *matchesfile;
-  double ical[9]={1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0}; // eye(3)
+  static const double eye3[9]={1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0}; // eye(3)
+  double ical[9];
 
   std::chrono::time_point<std::chrono::high_resolution_clock> start, stop;
 
   /* arguments parsing */
   if(argc!=3){
-    fprintf(stderr, "Usage: %s <K> <matched points>\n", argv[0]);
+    fprintf(stderr, "Usage: %s <K> <matched points>\n   '-' for K signals already normalized image points\n", argv[0]);
     exit(1);
   }
 
@@ -167,16 +167,28 @@ int main(int argc, char *argv[])
 
   if(strncmp(icalfile, "-", 1))
     readCalibParams(icalfile, ical);
+  else
+    std::memcpy(ical, eye3, 9*sizeof(double));
+
+  numpts=readMatchingPoints(matchesfile, pts2D, pts3D);
+  std::cout << argv[0] << ": read " << numpts << " points"<< std::endl;
 
   Eigen::Matrix<double, 3, 3> K = Eigen::Map<Eigen::Matrix<double, 3, 3, Eigen::RowMajor> > (ical);
   Eigen::Matrix<double, 3, 3> K1= K.inverse();
-  npts=readMatchingPoints(matchesfile, K1, pts2D, pts3D);
 
-  std::cout << argv[0] << ": read " << pts3D.size() << " points"<< std::endl;
+  // normalize projections
+  npts2D.reserve(numpts);
+  for(int i=0; i<numpts; ++i){
+    const double x=pts2D[i].vector[0], y=pts2D[i].vector[1];
+
+    const double nx=K1(0, 0)*x + K1(0, 1)*y + K1(0, 2);
+    const double ny=K1(1, 0)*x + K1(1, 1)*y + K1(1, 2);
+    npts2D.emplace_back(nx, ny);
+  }
 
 #if 0
-  for(int i=0; i<npts; ++i){
-    printf("%g %g %g  %g %g\n", pts3D[i].vector[0], pts3D[i].vector[1], pts3D[i].vector[2], pts2D[i].vector[0], pts2D[i].vector[1]);
+  for(int i=0; i<numpts; ++i){
+    printf("%g %g %g  %g %g\n", pts3D[i].vector[0], pts3D[i].vector[1], pts3D[i].vector[2], npts2D[i].vector[0], npts2D[i].vector[1]);
   }
 #endif
 
@@ -189,7 +201,7 @@ int main(int argc, char *argv[])
   //params.sqp_max_iteration=17;
   //params.rank_tolerance=1E-06;
   params.nearest_rotation_method=sqpnp::NearestRotationMethod::FOAM;
-  sqpnp::PnPSolver solver(pts3D, pts2D, std::vector<double>(npts, 1.0), params);
+  sqpnp::PnPSolver solver(pts3D, npts2D, std::vector<double>(numpts, 1.0), params);
 
   stop = std::chrono::high_resolution_clock::now();
 
@@ -214,7 +226,7 @@ int main(int argc, char *argv[])
   robust_pose_pnp::Matrix34d bestRt;
   std::vector<int> outidx;
 
-  robust_pose_pnp::PoseEstimator rpe(&pts3D, &pts2D, 4 /*3*/, 50);
+  robust_pose_pnp::PoseEstimator rpe(&pts3D, &npts2D, 4 /*3*/, 50);
   //rpe.set_sample_sizes(4, 30); // changes sample sizes dynamically
   rpe.ransacfit(20, 200, 0.8, 0.01, bestRt, nullptr, &outidx);
 
