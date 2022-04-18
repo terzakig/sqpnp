@@ -4,7 +4,7 @@ C++ Implementation of the SQPnP algorithm.
 The algorithm is the generic PnP solver described in the paper ["A Consistently Fast and Globally Optimal Solution to the Perspective-n-Point Problem" by G. Terzakis and M. Lourakis](http://www.ecva.net/papers/eccv_2020/papers_ECCV/papers/123460460.pdf). For more intuition, refer to the supplementary material [here](https://www.ecva.net/papers/eccv_2020/papers_ECCV/papers/123460460-supp.pdf).
 
 ## Required libraries
-SQPnP requires the [Eigen](http://eigen.tuxfamily.org/index.php?title=Main_Page) library to build. Besides rank revealing QR and optionally SVD, the use of Eigen is confined to matrix addition, transposition and multiplication.
+SQPnP requires the [Eigen](http://eigen.tuxfamily.org/index.php?title=Main_Page) library to build. Besides [rank revealing](https://nhigham.com/2021/05/19/what-is-a-rank-revealing-factorization/) QR and optionally SVD, the use of Eigen is confined to matrix addition, transposition and multiplication.
 Choosing Eigen was motivated by its increasing popularity and lightweight character. There are also three examples of using the solver in this repository:
 1. ) one that uses OpenCV, just for the sake of demonstrating the initialization of SQPnP with ``cv::Point_<>`` and ``cv::Point3_<>`` structures,
 2. ) another in which data points are copied from plain 2D arrays, and
