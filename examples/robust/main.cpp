@@ -228,7 +228,7 @@ int main(int argc, char *argv[])
 
   robust_pose_pnp::PoseEstimator rpe(&pts3D, &npts2D, 4 /*3*/, 50);
   //rpe.set_sample_sizes(4, 30); // changes sample sizes dynamically
-  rpe.ransacfit(20, 200, 0.8, 0.01, bestRt, nullptr, &outidx);
+  rpe.ransacfit(25, 200, 0.8, 0.01, bestRt, nullptr, &outidx);
 
   stop = std::chrono::high_resolution_clock::now();
 
