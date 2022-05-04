@@ -41,21 +41,27 @@ To run the robust estimation example, from the ``build`` directory,
 
 ## Non-default parameters
 See ``struct SolverParameters`` in ``types.h`` which contains SQPnP's parameters that can be specified by the caller.
-For instance, to use SVD instead of RRQR for the nullspace basis of Omega, the following fragment can be used:
+For instance, to use SVD instead of the default RRQR for the nullspace basis of Omega, the following fragment can be used:
 ```c++
   // call solver with user-specified parameters (and equal weights for all points)
   sqpnp::SolverParameters params;
   params.omega_nullspace_method = sqpnp::OmegaNullspaceMethod::SVD;
   sqpnp::PnPSolver solver(points3d, points2d, std::vector<double>(n, 1.0), params);
 ```
+Similarly, to use SVD in place of [FOAM](https://www.researchgate.net/publication/316445722_An_efficient_solution_to_absolute_orientation) for the nearest rotation matrix computations, use
+```c++
+params.nearest_rotation_method = sqpnp::NearestRotationMethod::SVD;
+```
 
 ## Cite as
 If you use this code in your published work, please cite the following paper:<br><br>
-@inproceedings{terzakis2020SQPnP,<br>
-  title={A Consistently Fast and Globally Optimal Solution to the Perspective-n-Point Problem},<br>
-  author={George Terzakis and Manolis Lourakis},<br>
-  booktitle={European Conference on Computer Vision},<br>
-  pages={478--494},<br>
-  year={2020},<br>
-  publisher={Springer International Publishing}<br>
-}<br>
+<pre>
+@inproceedings{terzakis2020SQPnP,
+  title={A Consistently Fast and Globally Optimal Solution to the Perspective-n-Point Problem},
+  author={George Terzakis and Manolis Lourakis},
+  booktitle={European Conference on Computer Vision},
+  pages={478--494},
+  year={2020},
+  publisher={Springer International Publishing}
+}
+<pre>
