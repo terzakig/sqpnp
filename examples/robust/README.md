@@ -1,5 +1,5 @@
 
-This directory demonstrates SQPnP with the [RansacLib](https://github.com/tsattler/RansacLib) library.
+This directory demonstrates [SQPnP](https://github.com/terzakig/sqpnp) with the [RansacLib](https://github.com/tsattler/RansacLib) library.
 
 ## General
 The robust_sqpnp_example demo program reads from two files: one with the camera intrinsics K and another containing the 3D - 2D corresponding points in separate lines as<br>
