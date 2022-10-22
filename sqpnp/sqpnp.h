@@ -246,7 +246,6 @@ namespace sqpnp
     
     // Solve the PnP
     bool Solve();
-    void H(int arg1, int arg2);
     
   private:
     std::vector<_Projection> projections_;
