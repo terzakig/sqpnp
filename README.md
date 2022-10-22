@@ -64,4 +64,7 @@ If you use this code in your published work, please cite the following paper:<br
   year={2020},
   publisher={Springer International Publishing}
 }
-<pre>
+</pre>
+
+## OpenCV
+SQPnP has been integrated into [OpenCV 4.x](https://github.com/opencv/opencv/blob/4.x/modules/calib3d/src/sqpnp.cpp) as method ``cv::SOLVEPNP_SQPNP`` in ``solvePnP()``.
