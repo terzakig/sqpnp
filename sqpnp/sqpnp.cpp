@@ -126,7 +126,7 @@ namespace sqpnp
 	solution[1] = RunSQP( solution[1].r );
 	solution[1].t = P_*solution[1].r_hat;
 	HandleSolution( solution[1], min_sq_error );
-	
+
       c++;
     }
 
@@ -173,10 +173,57 @@ namespace sqpnp
     
     return solution;
   }
-  
+
+  // Solve A*x=b for 3x3 SPD A.
+  // The solution involves computing a lower triangular sqrt-free Cholesky factor
+  // A=L*D*L' (L has ones on its diagonal, D is diagonal).
+  //
+  // Only the lower triangular part of A is accessed.
+  //
+  // The function returns 0 if successful, non-zero otherwise
+  //
+  // see http://euler.nmt.edu/~brian/ldlt.html
+  //
+  inline static int AxbSolveLDLt3x3(const Eigen::Matrix<double, 3, 3>& A, const Eigen::Matrix<double, 3, 1>& b,
+                                    Eigen::Matrix<double, 3, 1>& x)
+  {
+    double L[3 * 3], v[2];
+
+    // D is stored in L's diagonal, i.e. L[0], L[4], L[8]
+    // its elements should be positive
+    v[0] = L[0] = A(0, 0);
+    if (v[0] < 1E-10) return 1;
+    v[1] = 1.0 / v[0];
+    L[3] = A(1, 0) * v[1];
+    L[6] = A(2, 0) * v[1];
+    // L[1] = L[2] = 0.0;
+
+    v[0] = L[3] * L[0];
+    v[1] = L[4] = A(1, 1) - L[3] * v[0];
+    if (v[1] < 1E-10) return 2;
+    L[7] = (A(2, 1) - L[6] * v[0]) / v[1];
+    // L[5] = 0.0;
+
+    v[0] = L[6] * L[0];
+    v[1] = L[7] * L[4];
+    L[8] = A(2, 2) - L[6] * v[0] - L[7] * v[1];
+
+    // Forward solve L*x = b
+    x[0] = b[0];
+    x[1] = b[1] - L[3] * x[0];
+    x[2] = b[2] - L[6] * x[0] - L[7] * x[1];
+
+    // Backward solve D*L'*x = y
+    x[2] = x[2] / L[8];
+    x[1] = x[1] / L[4] - L[7] * x[2];
+    x[0] = x[0] / L[0] - L[3] * x[1] - L[6] * x[2];
+
+    return 0;
+  }
+
   //
   // Solve the SQP system efficiently
-  void PnPSolver::SolveSQPSystem(const Eigen::Matrix<double, 9, 1>& r, Eigen::Matrix<double, 9, 1>& delta )
+  void PnPSolver::SolveSQPSystem(const Eigen::Matrix<double, 9, 1>& r, Eigen::Matrix<double, 9, 1>& delta)
   {
     double sqnorm_r1 = r[0]*r[0] + r[1]*r[1] + r[2]*r[2], 
 	   sqnorm_r2 = r[3]*r[3] + r[4]*r[4] + r[5]*r[5], 
@@ -186,7 +233,7 @@ namespace sqpnp
 	   dot_r2r3 = r[3]*r[6] + r[4]*r[7] + r[5]*r[8];
     
     // Obtain 6D normal (H) and 3D null space of the constraint Jacobian-J at the estimate (r)
-    // NOTE: Thsi is done via Gram-Schmidt orthogoalization
+    // NOTE: This is done via Gram-Schmidt orthogonalization
     Eigen::Matrix<double, 9, 3> N;  // Null space of J
     Eigen::Matrix<double, 9, 6> H;  // Row space of J
     Eigen::Matrix<double, 6, 6> JH; // The lower triangular matrix J*Q
@@ -217,23 +264,27 @@ namespace sqpnp
     // Now obtain the component of delta in the row space of E as delta_h = Q'*x and assign straight into delta
     delta = H * x;
     
-    // Finally, solve for y from W*y = ksi , where matrix W and vector ksi are :
+    // Then, solve for y from W*y = ksi, where matrix W and vector ksi are :
     //
     // W = N'*Omega*N and ksi = -N'*Omega*( r + delta_h );
     Eigen::Matrix<double, 3, 9> NtOmega = N.transpose() * Omega_ ;
-    Eigen::Matrix<double, 3, 3> W = NtOmega * N, Winv;
-    InvertSymmetric3x3(W, Winv); // NOTE: This maybe also analytical with Eigen, but hey...
-    
-    Eigen::Matrix<double, 3, 1> y = -Winv * NtOmega * ( delta + r );
-    
-    // FINALLY, accumulate delta with component in tangent space (delta_n)
+    Eigen::Matrix<double, 3, 3> W = NtOmega * N;
+    Eigen::Matrix<double, 3, 1> y, rhs = -NtOmega * ( delta + r );
+
+    // solve with LDLt and if it fails, use LU
+    if (AxbSolveLDLt3x3(W, rhs, y))
+    {
+      y = W.lu().solve(rhs);
+    }
+
+    // Finally, accumulate delta with component in tangent space (delta_n)
     delta += N*y;
   }
   
   
   //
   // Compute the 3D null space (N) and 6D normal space (H) of the constraint Jacobian at a 9D vector r 
-  // (r is not necessarilly a rotation but it must represent an rank-3 matrix )
+  // (r is not necessarily a rotation but it must represent a rank-3 matrix)
   // NOTE: K is lower-triangular, so upper triangle may contain trash (is not filled by the function)...
   void PnPSolver::RowAndNullSpace(const Eigen::Matrix<double, 9, 1>& r, 
 				    Eigen::Matrix<double, 9, 6>& H, // Row space 
@@ -295,7 +346,6 @@ namespace sqpnp
     K(4, 3) = r[6]*H(3, 3) + r[7]*H(4, 3) + r[8]*H(5, 3); 
     K(4, 4) = r[6]*H(3, 4) + r[7]*H(4, 4) + r[8]*H(5, 4)  +  r[3]*H(6, 4) + r[4]*H(7, 4) + r[5]*H(8, 4); 
     
-    
     // 4. q6
     double dot_j6q1 = r[6]*H(0, 0) + r[7]*H(1, 0) + r[8]*H(2, 0),
 	   dot_j6q3 = r[0]*H(6, 2) + r[1]*H(7, 2) + r[2]*H(8, 2), 
@@ -323,7 +373,7 @@ namespace sqpnp
     // Great! Now H is an orthogonalized, sparse basis of the Jacobian row space and K is filled.
     //
     // Now get a projector onto the null space of H:
-    const Eigen::Matrix<double, 9, 9> Pn = Eigen::Matrix<double,9, 9>::Identity() - ( H*H.transpose() ); 
+    const Eigen::Matrix<double, 9, 9> Pn = Eigen::Matrix<double, 9, 9>::Identity() - ( H*H.transpose() );
     
     // Now we need to pick 3 columns of P with non-zero norm (> 0.3) and some angle between them (> 0.3).
     //
