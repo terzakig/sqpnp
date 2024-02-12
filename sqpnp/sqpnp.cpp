@@ -401,10 +401,11 @@ namespace sqpnp
     }
     const auto& v1 = Pn.block<9, 1>(0, index1);
     N.block<9, 1>(0, 0) = v1 * ( 1.0 / max_norm1 );
+    col_norms[index1] = -1.0; // mark to avoid use in subsequent loops
     
     for (int i = 0; i < 9; i++)
     {
-      if (i == index1) continue;
+      //if (i == index1) continue;
       if ( col_norms[i] >= norm_threshold)
       {
 	double cos_v1_x_col = fabs(Pn.col(i).dot(v1) / col_norms[i]);
@@ -418,15 +419,17 @@ namespace sqpnp
     }
     const auto& v2 = Pn.block<9, 1>(0, index2);
     N.block<9, 1>(0, 1) = v2 - v2.dot( N.col(0) ) * N.col(0);
-    N.block<9, 1>(0, 1) /= N.col(1).norm();
+    N.block<9, 1>(0, 1) *= (1.0 / N.col(1).norm());
+    col_norms[index2] = -1.0; // mark to avoid use in loop below
     
     for (int i = 0; i < 9; i++)
     {
-      if (i == index2 || i == index1) continue;
+      //if (i == index2 || i == index1) continue;
       if ( col_norms[i] >= norm_threshold)
       {
-	double cos_v1_x_col = fabs(Pn.col(i).dot(v1) / col_norms[i]);
-	double cos_v2_x_col = fabs(Pn.col(i).dot(v2) / col_norms[i]);
+	double inv_norm = 1.0 / col_norms[i];
+	double cos_v1_x_col = fabs(Pn.col(i).dot(v1) * inv_norm);
+	double cos_v2_x_col = fabs(Pn.col(i).dot(v2) * inv_norm);
 	
 	if ( cos_v1_x_col + cos_v2_x_col <= min_dot1323)
 	{
@@ -440,7 +443,7 @@ namespace sqpnp
     const auto& v3 = Pn.block<9, 1>(0, index3);
     
     N.block<9, 1>(0, 2) = v3 - ( v3.dot( N.col(1) ) * N.col(1) ) - ( v3.dot( N.col(0) ) * N.col(0) );
-    N.block<9, 1>(0, 2) /= N.col(2).norm();
+    N.block<9, 1>(0, 2) *= (1.0 / N.col(2).norm());
     
   }
   
