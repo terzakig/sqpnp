@@ -63,8 +63,11 @@ int main()
     _projections[i]=sqpnp::_Projection(p2[0], p2[1]);
   }
 
+  // demonstration of passing parameters to the solver
+  sqpnp::SolverParameters params;
+  params.omega_nullspace_method = sqpnp::OmegaNullspaceMethod::RRQR;
   // equal weights for all points
-  sqpnp::PnPSolver solver(_3dpoints, _projections, std::vector<double>(n, 1.0));
+  sqpnp::PnPSolver solver(_3dpoints, _projections, std::vector<double>(n, 1.0), params);
 
   auto stop = std::chrono::high_resolution_clock::now();
 
