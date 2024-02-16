@@ -261,7 +261,7 @@ namespace sqpnp
     x[4] = ( g[4] - JH(4, 1)*x[1] - JH(4, 2)*x[2] - JH(4, 3)*x[3] ) / JH(4, 4);
     x[5] = ( g[5] - JH(5, 0)*x[0] - JH(5, 2)*x[2] - JH(5, 3)*x[3] - JH(5, 4)*x[4] ) / JH(5, 5);
     
-    // Now obtain the component of delta in the row space of E as delta_h = Q'*x and assign straight into delta
+    // Now obtain the component of delta in the row space of E as delta_h = H*x and assign straight into delta
     delta = H * x;
     
     // Then, solve for y from W*y = ksi, where matrix W and vector ksi are :
