@@ -2,7 +2,9 @@
 // sqpnp.h
 //
 // George Terzakis (terzakig-at-hotmail-dot-com), September 2020
-// Nearest orthogonal approximation code (C) 2019 Manolis Lourakis
+// ptimizations by Manolis Lourakis, February 2022, February 2024
+//
+// Nearest orthogonal approximation code by Manolis Lourakis, 2019
 //
 // Implementation of SQPnP as described in the paper:
 //

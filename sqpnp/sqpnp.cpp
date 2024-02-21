@@ -2,6 +2,7 @@
 // sqpnp.cpp
 //
 // George Terzakis (terzakig-at-hotmail-dot-com), September 2020
+// Optimizations by Manolis Lourakis, February 2022, February 2024
 // 
 // Implementation of SQPnP as described in the paper:
 //
@@ -340,7 +341,7 @@ namespace sqpnp
     H(3, 4) = r[6] - dot_j5q2*H(3, 1) - dot_j5q4*H(3, 3); H(4, 4) = r[7] - dot_j5q2*H(4, 1) - dot_j5q4*H(4, 3); H(5, 4) = r[8] - dot_j5q2*H(5, 1) - dot_j5q4*H(5, 3);
     H(6, 4) = r[3] - dot_j5q3*H(6, 2); H(7, 4) = r[4] - dot_j5q3*H(7, 2); H(8, 4) = r[5] - dot_j5q3*H(8, 2);
     
-    H.block<9, 1>(0, 4) /= H.col(4).norm();
+    H.block<9, 1>(0, 4) *= (1.0 / H.col(4).norm());
    
     K(4, 0) = 0; K(4, 1) = r[6]*H(3, 1) + r[7]*H(4, 1) + r[8]*H(5, 1); K(4, 2) = r[3]*H(6, 2) + r[4]*H(7, 2) + r[5]*H(8, 2);
     K(4, 3) = r[6]*H(3, 3) + r[7]*H(4, 3) + r[8]*H(5, 3); 
@@ -364,7 +365,7 @@ namespace sqpnp
     H(7, 5) = r[1] - dot_j6q3*H(7, 2) - dot_j6q5*H(7, 4); 
     H(8, 5) = r[2] - dot_j6q3*H(8, 2) - dot_j6q5*H(8, 4);
     
-    H.block<9, 1>(0, 5) /= H.col(5).norm();
+    H.block<9, 1>(0, 5) *= (1.0 / H.col(5).norm());
     
     K(5, 0) = r[6]*H(0, 0) + r[7]*H(1, 0) + r[8]*H(2, 0); K(5, 1) = 0; K(5, 2) = r[0]*H(6, 2) + r[1]*H(7, 2) + r[2]*H(8, 2);
     K(5, 3) = r[6]*H(0, 3) + r[7]*H(1, 3) + r[8]*H(2, 3); K(5, 4) = r[6]*H(0, 4) + r[7]*H(1, 4) + r[8]*H(2, 4) +   r[0]*H(6, 4) + r[1]*H(7, 4) + r[2]*H(8, 4);
