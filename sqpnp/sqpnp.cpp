@@ -1,14 +1,15 @@
 //
 // sqpnp.cpp
-//
-// George Terzakis (terzakig-at-hotmail-dot-com), September 2020
-// Optimizations by Manolis Lourakis, February 2022, February 2024
 // 
 // Implementation of SQPnP as described in the paper:
 //
 // "A Consistently Fast and Globally Optimal Solution to the Perspective-n-Point Problem" by G. Terzakis and M. Lourakis
 //     a) Paper:         https://www.ecva.net/papers/eccv_2020/papers_ECCV/papers/123460460.pdf
 //     b) Supplementary: https://www.ecva.net/papers/eccv_2020/papers_ECCV/papers/123460460-supp.pdf
+//
+// George Terzakis (terzakig-at-hotmail-dot-com), September 2020
+// Optimizations by Manolis Lourakis, February 2022, February 2024
+//
 
 #include <sqpnp.h>
 
