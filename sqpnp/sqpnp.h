@@ -412,6 +412,27 @@ namespace sqpnp
       r = Eigen::Map<Eigen::Matrix<double, 9, 1>>(R.data(), 9, 1);
     }
 
+#if 0
+    // EVD-based nearest rotation matrix. The nearest rotation matrix is given by B*inv(sqrtm(B'*B)).
+    // If B'*B = U*T*U' is the eigendecomposition, the square root simplifies to sqrtm(B'*B) = (B'*B)^(1/2) = U*T^(1/2)*U'
+    // and thus B*inv(sqrtm(B'*B)) equals B*U*T^(-1/2)*U'
+    // See https://people.eecs.berkeley.edu/~wkahan/Math128/NearestQ.pdf
+    inline static void NearestRotationMatrix_EVD(const Eigen::Matrix<double, 9, 1>& e, Eigen::Matrix<double, 9, 1>& r)
+    {
+      const Eigen::Map<const Eigen::Matrix<double, 3, 3>> B(e.data(), 3, 3);
+      const Eigen::Matrix<double, 3, 3> BtB = B.transpose()*B;
+      Eigen::SelfAdjointEigenSolver<Eigen::Matrix<double, 3, 3>> es(BtB);
+      const Eigen::Matrix<double, 3, 3> U = es.eigenvectors();
+      //const Eigen::Matrix<double, 3, 3> T = es.eigenvalues().asDiagonal();
+      const Eigen::Matrix<double, 3, 3> S = es.eigenvalues().cwiseSqrt().cwiseInverse().asDiagonal(); // T^(-1/2), i.e. T=inv(S*S)
+
+      // the inverse square root of BtB is U*S*U'
+      Eigen::Matrix<double, 3, 3> R = B * U * S * U.transpose();
+      if (R.determinant() < 0.0) R = -R;
+      r = Eigen::Map<Eigen::Matrix<double, 9, 1>>(R.data(), 9, 1);
+    }
+#endif
+
     // Faster nearest rotation computation based on FOAM. See M. Lourakis: "An Efficient Solution to Absolute Orientation", ICPR 2016
     // and M. Lourakis, G. Terzakis: "Efficient Absolute Orientation Revisited", IROS 2018.
     /* Solve the nearest orthogonal approximation problem
