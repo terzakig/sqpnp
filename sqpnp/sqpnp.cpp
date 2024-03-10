@@ -104,12 +104,12 @@ namespace sqpnp
 	  NearestRotationMatrix( e, solution[0].r );
 	  solution[0] = RunSQP( solution[0].r );
 	  solution[0].t = P_*solution[0].r_hat;
-	  HandleSolution( solution[0] , min_sq_error );
+	  HandleSolution( solution[0], min_sq_error );
 
 	  NearestRotationMatrix( -e, solution[1].r );
 	  solution[1] = RunSQP( solution[1].r );
 	  solution[1].t = P_*solution[1].r_hat;
-	  HandleSolution( solution[1] , min_sq_error );
+	  HandleSolution( solution[1], min_sq_error );
       }
     }
 
@@ -119,15 +119,15 @@ namespace sqpnp
       const Eigen::Matrix<double, 9, 1> e = Eigen::Map<Eigen::Matrix<double, 9, 1>>( U_.block<9, 1>(0, index).data() );
       SQPSolution solution[2];
       
-	NearestRotationMatrix( e, solution[0].r);
-	solution[0] = RunSQP( solution[0].r );
-	solution[0].t = P_*solution[0].r_hat;
-	HandleSolution( solution[0], min_sq_error );
+      NearestRotationMatrix( e, solution[0].r );
+      solution[0] = RunSQP( solution[0].r );
+      solution[0].t = P_*solution[0].r_hat;
+      HandleSolution( solution[0], min_sq_error );
 
-	NearestRotationMatrix( -e, solution[1].r);
-	solution[1] = RunSQP( solution[1].r );
-	solution[1].t = P_*solution[1].r_hat;
-	HandleSolution( solution[1], min_sq_error );
+      NearestRotationMatrix( -e, solution[1].r );
+      solution[1] = RunSQP( solution[1].r );
+      solution[1].t = P_*solution[1].r_hat;
+      HandleSolution( solution[1], min_sq_error );
 
       c++;
     }
@@ -271,7 +271,7 @@ namespace sqpnp
     // W = N'*Omega*N and ksi = -N'*Omega*( r + delta_h );
     Eigen::Matrix<double, 3, 9> NtOmega = N.transpose() * Omega_ ;
     Eigen::Matrix<double, 3, 3> W = NtOmega * N;
-    Eigen::Matrix<double, 3, 1> y, rhs = -NtOmega * ( delta + r );
+    Eigen::Matrix<double, 3, 1> y, rhs = - ( NtOmega * ( delta + r ) );
 
     // solve with LDLt and if it fails, use LU
     if (AxbSolveLDLt3x3(W, rhs, y))

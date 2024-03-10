@@ -306,8 +306,8 @@ namespace sqpnp
       for (size_t i = 0; i < points_.size(); i++)
       {
 	const auto& M = points_[i].vector;
-	const double Xc     =         r[0]*M[0] + r[1]*M[1] + r[2]*M[2] + t[0], 
-	       Yc     =         r[3]*M[0] + r[4]*M[1] + r[5]*M[2] + t[1], 
+	const double Xc     =   r[0]*M[0] + r[1]*M[1] + r[2]*M[2] + t[0],
+	       Yc           =   r[3]*M[0] + r[4]*M[1] + r[5]*M[2] + t[1],
 	       inv_Zc = 1.0 / ( r[6]*M[0] + r[7]*M[1] + r[8]*M[2] + t[2] );
 
 	const auto& m = projections_[i].vector;
@@ -317,7 +317,7 @@ namespace sqpnp
       }
       
       return avg / points_.size();
-    }    
+    }
 
     //
     // Test cheirality on the mean point for a given solution
@@ -552,13 +552,13 @@ namespace sqpnp
     
     //
     // Compute the 3D null space (N) and 6D normal space (H) of the constraint Jacobian 
-    // at a 9D vector r (not necessarily a rotation-yet it should be rank-3)
+    // at a 9D vector r (not necessarily a rotation, yet it should be rank-3)
     static void RowAndNullSpace(const Eigen::Matrix<double, 9, 1>& r, 
 				      Eigen::Matrix<double, 9, 6>& H, 
 				      Eigen::Matrix<double, 9, 3>& N,
 				      Eigen::Matrix<double, 6, 6>& K,
 				const double& norm_threshold = 0.1); 
-   
+
   };
 
 }
