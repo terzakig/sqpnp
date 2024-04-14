@@ -55,7 +55,7 @@ int main()
   std::vector<sqpnp::_Point> _3dpoints(n);
   std::vector<sqpnp::_Projection> _projections(n);
 
-  for(int i=0; i<n; ++i){
+  for (int i = 0; i < n; i++) {
     const double *p3=pts3[i];
     const double *p2=pts2[i];
 
@@ -71,7 +71,7 @@ int main()
 
   auto stop = std::chrono::high_resolution_clock::now();
 
-  if(solver.IsValid()){
+  if (solver.IsValid()) {
     solver.Solve();
     stop = std::chrono::high_resolution_clock::now();
     std::cout << "SQPnP found " << solver.NumberOfSolutions() << " solution(s)"<< std::endl;
@@ -79,7 +79,7 @@ int main()
     {
       std::cout << "\nSolution " << i << ":\n";
       std::cout << *solver.SolutionPtr(i) << std::endl;
-      std::cout << " Average squared projection error : " << solver.AverageSquaredProjectionErrors().at(i) << std::endl;
+      std::cout << " Average squared projection error : " << solver.AverageSquaredProjectionErrors()[i] << std::endl;
     }
   }
   auto duration = std::chrono::duration_cast<std::chrono::microseconds>(stop - start);
