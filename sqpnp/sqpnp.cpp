@@ -227,12 +227,12 @@ namespace sqpnp
   // Solve the SQP system efficiently
   void PnPSolver::SolveSQPSystem(const Eigen::Matrix<double, 9, 1>& r, Eigen::Matrix<double, 9, 1>& delta)
   {
-    double sqnorm_r1 = r[0]*r[0] + r[1]*r[1] + r[2]*r[2], 
-	   sqnorm_r2 = r[3]*r[3] + r[4]*r[4] + r[5]*r[5], 
-	   sqnorm_r3 = r[6]*r[6] + r[7]*r[7] + r[8]*r[8];
-    double dot_r1r2 = r[0]*r[3] + r[1]*r[4] + r[2]*r[5], 
-	   dot_r1r3 = r[0]*r[6] + r[1]*r[7] + r[2]*r[8], 
-	   dot_r2r3 = r[3]*r[6] + r[4]*r[7] + r[5]*r[8];
+    const double sqnorm_r1 = r[0]*r[0] + r[1]*r[1] + r[2]*r[2],
+                 sqnorm_r2 = r[3]*r[3] + r[4]*r[4] + r[5]*r[5],
+                 sqnorm_r3 = r[6]*r[6] + r[7]*r[7] + r[8]*r[8];
+    const double dot_r1r2 = r[0]*r[3] + r[1]*r[4] + r[2]*r[5],
+                 dot_r1r3 = r[0]*r[6] + r[1]*r[7] + r[2]*r[8],
+                 dot_r2r3 = r[3]*r[6] + r[4]*r[7] + r[5]*r[8];
     
     // Obtain 6D normal (H) and 3D null space of the constraint Jacobian-J at the estimate (r)
     // NOTE: This is done via Gram-Schmidt orthogonalization
@@ -273,10 +273,12 @@ namespace sqpnp
     Eigen::Matrix<double, 3, 3> W = NtOmega * N;
     Eigen::Matrix<double, 3, 1> y, rhs = - ( NtOmega * ( delta + r ) );
 
-    // solve with LDLt and if it fails, use LU
+    // solve with LDLt and if it fails, use inverse
     if (AxbSolveLDLt3x3(W, rhs, y))
     {
-      y = W.lu().solve(rhs);
+      Eigen::Matrix<double, 3, 3> Winv;
+      InvertSymmetric3x3(W, Winv);
+      y = Winv * rhs;
     }
 
     // Finally, accumulate delta with component in tangent space (delta_n)
@@ -369,7 +371,7 @@ namespace sqpnp
     H.block<9, 1>(0, 5) *= (1.0 / H.col(5).norm());
     
     K(5, 0) = r[6]*H(0, 0) + r[7]*H(1, 0) + r[8]*H(2, 0); K(5, 1) = 0; K(5, 2) = r[0]*H(6, 2) + r[1]*H(7, 2) + r[2]*H(8, 2);
-    K(5, 3) = r[6]*H(0, 3) + r[7]*H(1, 3) + r[8]*H(2, 3); K(5, 4) = r[6]*H(0, 4) + r[7]*H(1, 4) + r[8]*H(2, 4) +   r[0]*H(6, 4) + r[1]*H(7, 4) + r[2]*H(8, 4);
+    K(5, 3) = r[6]*H(0, 3) + r[7]*H(1, 3) + r[8]*H(2, 3); K(5, 4) = r[6]*H(0, 4) + r[7]*H(1, 4) + r[8]*H(2, 4)  +  r[0]*H(6, 4) + r[1]*H(7, 4) + r[2]*H(8, 4);
     K(5, 5) = r[6]*H(0, 5) + r[7]*H(1, 5) + r[8]*H(2, 5) + r[0]*H(6, 5) + r[1]*H(7, 5) + r[2]*H(8, 5);
     
     // Great! Now H is an orthogonalized, sparse basis of the Jacobian row space and K is filled.
