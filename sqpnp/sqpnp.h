@@ -351,7 +351,7 @@ namespace sqpnp
     // Determinant of 3x3 matrix stored as a 9x1 vector in *row-major* order
     inline static double Determinant9x1(const Eigen::Matrix<double, 9, 1>& r)
     {
-      return r[0]*r[4]*r[8] + r[1]*r[5]*r[6] + r[2]*r[3]*r[7] - ( r[6]*r[4]*r[2] + r[7]*r[5]*r[0] + r[8]*r[3]*r[1] );
+      return ( r[0]*r[4]*r[8] + r[1]*r[5]*r[6] + r[2]*r[3]*r[7] ) - ( r[6]*r[4]*r[2] + r[7]*r[5]*r[0] + r[8]*r[3]*r[1] );
     }
 
     // Determinant of 3x3 matrix
