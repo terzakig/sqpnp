@@ -1,13 +1,14 @@
  //
 // Types.h
 //
-// George Terzakis, September 2020
-//
 // Implementation of SQPnP as described in the paper:
 //
 // "A Consistently Fast and Globally Optimal Solution to the Perspective-n-Point Problem" by G. Terzakis and M. Lourakis
 //     a) Paper:         https://www.ecva.net/papers/eccv_2020/papers_ECCV/papers/123460460.pdf
 //     b) Supplementary: https://www.ecva.net/papers/eccv_2020/papers_ECCV/papers/123460460-supp.pdf
+//
+// George Terzakis, September 2020
+//
 
 #ifndef _SQPNPTYPES__H_
 #define _SQPNPTYPES__H_
@@ -105,7 +106,7 @@ namespace sqpnp
 
   };
   
-  enum class OmegaNullspaceMethod { RRQR, SVD };
+  enum class OmegaNullspaceMethod { RRQR, CPRRQR, SVD };
   enum class NearestRotationMethod { FOAM, SVD };
   
   struct SolverParameters
@@ -180,8 +181,6 @@ namespace sqpnp
 		 "number of SQP iterations : " << solution.num_iterations << "\n" <<
 		 "-------------------------------------------------------------------------------------------------\n";
   }
-	
-  
 
 }
 

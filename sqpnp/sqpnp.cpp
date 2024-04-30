@@ -1,13 +1,15 @@
 //
 // sqpnp.cpp
-//
-// George Terzakis (terzakig-at-hotmail-dot-com), September 2020
 // 
 // Implementation of SQPnP as described in the paper:
 //
 // "A Consistently Fast and Globally Optimal Solution to the Perspective-n-Point Problem" by G. Terzakis and M. Lourakis
 //     a) Paper:         https://www.ecva.net/papers/eccv_2020/papers_ECCV/papers/123460460.pdf
 //     b) Supplementary: https://www.ecva.net/papers/eccv_2020/papers_ECCV/papers/123460460-supp.pdf
+//
+// George Terzakis (terzakig-at-hotmail-dot-com), September 2020
+// Optimizations by Manolis Lourakis, February 2022, February 2024
+//
 
 #include <sqpnp.h>
 
@@ -102,12 +104,12 @@ namespace sqpnp
 	  NearestRotationMatrix( e, solution[0].r );
 	  solution[0] = RunSQP( solution[0].r );
 	  solution[0].t = P_*solution[0].r_hat;
-	  HandleSolution( solution[0] , min_sq_error );
+	  HandleSolution( solution[0], min_sq_error );
 
 	  NearestRotationMatrix( -e, solution[1].r );
 	  solution[1] = RunSQP( solution[1].r );
 	  solution[1].t = P_*solution[1].r_hat;
-	  HandleSolution( solution[1] , min_sq_error );
+	  HandleSolution( solution[1], min_sq_error );
       }
     }
 
@@ -117,16 +119,16 @@ namespace sqpnp
       const Eigen::Matrix<double, 9, 1> e = Eigen::Map<Eigen::Matrix<double, 9, 1>>( U_.block<9, 1>(0, index).data() );
       SQPSolution solution[2];
       
-	NearestRotationMatrix( e, solution[0].r);
-	solution[0] = RunSQP( solution[0].r );
-	solution[0].t = P_*solution[0].r_hat;
-	HandleSolution( solution[0], min_sq_error );
+      NearestRotationMatrix( e, solution[0].r );
+      solution[0] = RunSQP( solution[0].r );
+      solution[0].t = P_*solution[0].r_hat;
+      HandleSolution( solution[0], min_sq_error );
 
-	NearestRotationMatrix( -e, solution[1].r);
-	solution[1] = RunSQP( solution[1].r );
-	solution[1].t = P_*solution[1].r_hat;
-	HandleSolution( solution[1], min_sq_error );
-	
+      NearestRotationMatrix( -e, solution[1].r );
+      solution[1] = RunSQP( solution[1].r );
+      solution[1].t = P_*solution[1].r_hat;
+      HandleSolution( solution[1], min_sq_error );
+
       c++;
     }
 
@@ -173,20 +175,67 @@ namespace sqpnp
     
     return solution;
   }
-  
+
+  // Solve A*x=b for 3x3 SPD A.
+  // The solution involves computing a lower triangular sqrt-free Cholesky factor
+  // A=L*D*L' (L has ones on its diagonal, D is diagonal).
+  //
+  // Only the lower triangular part of A is accessed.
+  //
+  // The function returns 0 if successful, non-zero otherwise
+  //
+  // see http://euler.nmt.edu/~brian/ldlt.html
+  //
+  inline static int AxbSolveLDLt3x3(const Eigen::Matrix<double, 3, 3>& A, const Eigen::Matrix<double, 3, 1>& b,
+                                    Eigen::Matrix<double, 3, 1>& x)
+  {
+    double L[3 * 3], v[2];
+
+    // D is stored in L's diagonal, i.e. L[0], L[4], L[8]
+    // its elements should be positive
+    v[0] = L[0] = A(0, 0);
+    if (v[0] < 1E-10) return 1;
+    v[1] = 1.0 / v[0];
+    L[3] = A(1, 0) * v[1];
+    L[6] = A(2, 0) * v[1];
+    // L[1] = L[2] = 0.0;
+
+    v[0] = L[3] * L[0];
+    v[1] = L[4] = A(1, 1) - L[3] * v[0];
+    if (v[1] < 1E-10) return 2;
+    L[7] = (A(2, 1) - L[6] * v[0]) / v[1];
+    // L[5] = 0.0;
+
+    v[0] = L[6] * L[0];
+    v[1] = L[7] * L[4];
+    L[8] = A(2, 2) - L[6] * v[0] - L[7] * v[1];
+
+    // Forward solve L*x = b
+    x[0] = b[0];
+    x[1] = b[1] - L[3] * x[0];
+    x[2] = b[2] - L[6] * x[0] - L[7] * x[1];
+
+    // Backward solve D*L'*x = y
+    x[2] = x[2] / L[8];
+    x[1] = x[1] / L[4] - L[7] * x[2];
+    x[0] = x[0] / L[0] - L[3] * x[1] - L[6] * x[2];
+
+    return 0;
+  }
+
   //
   // Solve the SQP system efficiently
-  void PnPSolver::SolveSQPSystem(const Eigen::Matrix<double, 9, 1>& r, Eigen::Matrix<double, 9, 1>& delta )
+  void PnPSolver::SolveSQPSystem(const Eigen::Matrix<double, 9, 1>& r, Eigen::Matrix<double, 9, 1>& delta)
   {
-    double sqnorm_r1 = r[0]*r[0] + r[1]*r[1] + r[2]*r[2], 
-	   sqnorm_r2 = r[3]*r[3] + r[4]*r[4] + r[5]*r[5], 
-	   sqnorm_r3 = r[6]*r[6] + r[7]*r[7] + r[8]*r[8];
-    double dot_r1r2 = r[0]*r[3] + r[1]*r[4] + r[2]*r[5], 
-	   dot_r1r3 = r[0]*r[6] + r[1]*r[7] + r[2]*r[8], 
-	   dot_r2r3 = r[3]*r[6] + r[4]*r[7] + r[5]*r[8];
+    const double sqnorm_r1 = r[0]*r[0] + r[1]*r[1] + r[2]*r[2],
+                 sqnorm_r2 = r[3]*r[3] + r[4]*r[4] + r[5]*r[5],
+                 sqnorm_r3 = r[6]*r[6] + r[7]*r[7] + r[8]*r[8];
+    const double dot_r1r2 = r[0]*r[3] + r[1]*r[4] + r[2]*r[5],
+                 dot_r1r3 = r[0]*r[6] + r[1]*r[7] + r[2]*r[8],
+                 dot_r2r3 = r[3]*r[6] + r[4]*r[7] + r[5]*r[8];
     
     // Obtain 6D normal (H) and 3D null space of the constraint Jacobian-J at the estimate (r)
-    // NOTE: Thsi is done via Gram-Schmidt orthogoalization
+    // NOTE: This is done via Gram-Schmidt orthogonalization
     Eigen::Matrix<double, 9, 3> N;  // Null space of J
     Eigen::Matrix<double, 9, 6> H;  // Row space of J
     Eigen::Matrix<double, 6, 6> JH; // The lower triangular matrix J*Q
@@ -214,26 +263,32 @@ namespace sqpnp
     x[4] = ( g[4] - JH(4, 1)*x[1] - JH(4, 2)*x[2] - JH(4, 3)*x[3] ) / JH(4, 4);
     x[5] = ( g[5] - JH(5, 0)*x[0] - JH(5, 2)*x[2] - JH(5, 3)*x[3] - JH(5, 4)*x[4] ) / JH(5, 5);
     
-    // Now obtain the component of delta in the row space of E as delta_h = Q'*x and assign straight into delta
+    // Now obtain the component of delta in the row space of E as delta_h = H*x and assign straight into delta
     delta = H * x;
     
-    // Finally, solve for y from W*y = ksi , where matrix W and vector ksi are :
+    // Then, solve for y from W*y = ksi, where matrix W and vector ksi are :
     //
     // W = N'*Omega*N and ksi = -N'*Omega*( r + delta_h );
     Eigen::Matrix<double, 3, 9> NtOmega = N.transpose() * Omega_ ;
-    Eigen::Matrix<double, 3, 3> W = NtOmega * N, Winv;
-    InvertSymmetric3x3(W, Winv); // NOTE: This maybe also analytical with Eigen, but hey...
-    
-    Eigen::Matrix<double, 3, 1> y = -Winv * NtOmega * ( delta + r );
-    
-    // FINALLY, accumulate delta with component in tangent space (delta_n)
+    Eigen::Matrix<double, 3, 3> W = NtOmega * N;
+    Eigen::Matrix<double, 3, 1> y, rhs = - ( NtOmega * ( delta + r ) );
+
+    // solve with LDLt and if it fails, use inverse
+    if (AxbSolveLDLt3x3(W, rhs, y))
+    {
+      Eigen::Matrix<double, 3, 3> Winv;
+      InvertSymmetric3x3(W, Winv);
+      y = Winv * rhs;
+    }
+
+    // Finally, accumulate delta with component in tangent space (delta_n)
     delta += N*y;
   }
   
   
   //
   // Compute the 3D null space (N) and 6D normal space (H) of the constraint Jacobian at a 9D vector r 
-  // (r is not necessarilly a rotation but it must represent an rank-3 matrix )
+  // (r is not necessarily a rotation but it must represent a rank-3 matrix)
   // NOTE: K is lower-triangular, so upper triangle may contain trash (is not filled by the function)...
   void PnPSolver::RowAndNullSpace(const Eigen::Matrix<double, 9, 1>& r, 
 				    Eigen::Matrix<double, 9, 6>& H, // Row space 
@@ -289,12 +344,11 @@ namespace sqpnp
     H(3, 4) = r[6] - dot_j5q2*H(3, 1) - dot_j5q4*H(3, 3); H(4, 4) = r[7] - dot_j5q2*H(4, 1) - dot_j5q4*H(4, 3); H(5, 4) = r[8] - dot_j5q2*H(5, 1) - dot_j5q4*H(5, 3);
     H(6, 4) = r[3] - dot_j5q3*H(6, 2); H(7, 4) = r[4] - dot_j5q3*H(7, 2); H(8, 4) = r[5] - dot_j5q3*H(8, 2);
     
-    H.block<9, 1>(0, 4) /= H.col(4).norm();
+    H.block<9, 1>(0, 4) *= (1.0 / H.col(4).norm());
    
     K(4, 0) = 0; K(4, 1) = r[6]*H(3, 1) + r[7]*H(4, 1) + r[8]*H(5, 1); K(4, 2) = r[3]*H(6, 2) + r[4]*H(7, 2) + r[5]*H(8, 2);
     K(4, 3) = r[6]*H(3, 3) + r[7]*H(4, 3) + r[8]*H(5, 3); 
     K(4, 4) = r[6]*H(3, 4) + r[7]*H(4, 4) + r[8]*H(5, 4)  +  r[3]*H(6, 4) + r[4]*H(7, 4) + r[5]*H(8, 4); 
-    
     
     // 4. q6
     double dot_j6q1 = r[6]*H(0, 0) + r[7]*H(1, 0) + r[8]*H(2, 0),
@@ -314,16 +368,16 @@ namespace sqpnp
     H(7, 5) = r[1] - dot_j6q3*H(7, 2) - dot_j6q5*H(7, 4); 
     H(8, 5) = r[2] - dot_j6q3*H(8, 2) - dot_j6q5*H(8, 4);
     
-    H.block<9, 1>(0, 5) /= H.col(5).norm();
+    H.block<9, 1>(0, 5) *= (1.0 / H.col(5).norm());
     
     K(5, 0) = r[6]*H(0, 0) + r[7]*H(1, 0) + r[8]*H(2, 0); K(5, 1) = 0; K(5, 2) = r[0]*H(6, 2) + r[1]*H(7, 2) + r[2]*H(8, 2);
-    K(5, 3) = r[6]*H(0, 3) + r[7]*H(1, 3) + r[8]*H(2, 3); K(5, 4) = r[6]*H(0, 4) + r[7]*H(1, 4) + r[8]*H(2, 4) +   r[0]*H(6, 4) + r[1]*H(7, 4) + r[2]*H(8, 4);
+    K(5, 3) = r[6]*H(0, 3) + r[7]*H(1, 3) + r[8]*H(2, 3); K(5, 4) = r[6]*H(0, 4) + r[7]*H(1, 4) + r[8]*H(2, 4)  +  r[0]*H(6, 4) + r[1]*H(7, 4) + r[2]*H(8, 4);
     K(5, 5) = r[6]*H(0, 5) + r[7]*H(1, 5) + r[8]*H(2, 5) + r[0]*H(6, 5) + r[1]*H(7, 5) + r[2]*H(8, 5);
     
     // Great! Now H is an orthogonalized, sparse basis of the Jacobian row space and K is filled.
     //
     // Now get a projector onto the null space of H:
-    const Eigen::Matrix<double, 9, 9> Pn = Eigen::Matrix<double,9, 9>::Identity() - ( H*H.transpose() ); 
+    const Eigen::Matrix<double, 9, 9> Pn = Eigen::Matrix<double, 9, 9>::Identity() - ( H*H.transpose() );
     
     // Now we need to pick 3 columns of P with non-zero norm (> 0.3) and some angle between them (> 0.3).
     //
@@ -351,10 +405,11 @@ namespace sqpnp
     }
     const auto& v1 = Pn.block<9, 1>(0, index1);
     N.block<9, 1>(0, 0) = v1 * ( 1.0 / max_norm1 );
+    col_norms[index1] = -1.0; // mark to avoid use in subsequent loops
     
     for (int i = 0; i < 9; i++)
     {
-      if (i == index1) continue;
+      //if (i == index1) continue;
       if ( col_norms[i] >= norm_threshold)
       {
 	double cos_v1_x_col = fabs(Pn.col(i).dot(v1) / col_norms[i]);
@@ -368,15 +423,17 @@ namespace sqpnp
     }
     const auto& v2 = Pn.block<9, 1>(0, index2);
     N.block<9, 1>(0, 1) = v2 - v2.dot( N.col(0) ) * N.col(0);
-    N.block<9, 1>(0, 1) /= N.col(1).norm();
+    N.block<9, 1>(0, 1) *= (1.0 / N.col(1).norm());
+    col_norms[index2] = -1.0; // mark to avoid use in loop below
     
     for (int i = 0; i < 9; i++)
     {
-      if (i == index2 || i == index1) continue;
+      //if (i == index2 || i == index1) continue;
       if ( col_norms[i] >= norm_threshold)
       {
-	double cos_v1_x_col = fabs(Pn.col(i).dot(v1) / col_norms[i]);
-	double cos_v2_x_col = fabs(Pn.col(i).dot(v2) / col_norms[i]);
+	double inv_norm = 1.0 / col_norms[i];
+	double cos_v1_x_col = fabs(Pn.col(i).dot(v1) * inv_norm);
+	double cos_v2_x_col = fabs(Pn.col(i).dot(v2) * inv_norm);
 	
 	if ( cos_v1_x_col + cos_v2_x_col <= min_dot1323)
 	{
@@ -390,7 +447,7 @@ namespace sqpnp
     const auto& v3 = Pn.block<9, 1>(0, index3);
     
     N.block<9, 1>(0, 2) = v3 - ( v3.dot( N.col(1) ) * N.col(1) ) - ( v3.dot( N.col(0) ) * N.col(0) );
-    N.block<9, 1>(0, 2) /= N.col(2).norm();
+    N.block<9, 1>(0, 2) *= (1.0 / N.col(2).norm());
     
   }
   

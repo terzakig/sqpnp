@@ -213,7 +213,7 @@ int main(int argc, char *argv[])
     {
       std::cout << "\nSolution " << i << ":\n";
       std::cout << *solver.SolutionPtr(i) << std::endl;
-      std::cout << " Average squared projection error : " << solver.AverageSquaredProjectionErrors().at(i) << std::endl;
+      std::cout << " Average squared projection error : " << solver.AverageSquaredProjectionErrors()[i] << std::endl;
     }
   }
   auto micros = std::chrono::duration_cast<std::chrono::microseconds>(stop - start);

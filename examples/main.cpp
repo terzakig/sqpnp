@@ -61,13 +61,13 @@ void GenerateSyntheticPoints(int n,
     noisy_projections.clear();
     std::normal_distribution<double> projection_noise(0.0, std_noise );
     
-    while(points.size() < n)
+    while(static_cast<int>(points.size()) < n)
     {
-      std::normal_distribution<double> point_X(C.x,  radius); 
-      std::normal_distribution<double> point_Y(C.y,  radius); 
-      std::normal_distribution<double> point_Z(C.z,  radius); 
+      std::normal_distribution<double> point_X(C.x, radius);
+      std::normal_distribution<double> point_Y(C.y, radius);
+      std::normal_distribution<double> point_Z(C.z, radius);
       
-      cv::Vec<double, 3> Mw(point_X(generator), point_Y(generator), point_Z(generator)  );
+      cv::Vec<double, 3> Mw( point_X(generator), point_Y(generator), point_Z(generator) );
       cv::Vec<double, 3> Mc = R*(Mw - pos);
        if ( Mc[2] < 0 )
        {
@@ -143,18 +143,23 @@ int main()
   }
   
   auto start = std::chrono::steady_clock::now();
+
+  sqpnp::SolverParameters params;
+  params.omega_nullspace_method = sqpnp::OmegaNullspaceMethod::RRQR;
+  std::vector<double>weights(n, 1.0);
   double max_sq_error = 0, max_sq_proj_error = 0;
   std::vector<sqpnp::SQPSolution> solutions;
   for (int i = 0; i < N; i++)
   {
-    sqpnp::PnPSolver solver(vpoints.at(i), vnoisy_projections.at(i));
-    if (solver.IsValid() ) 
+    // example passing weights and parameters to the solver
+    sqpnp::PnPSolver solver(vpoints[i], vnoisy_projections[i], weights, params);
+    if ( solver.IsValid() )
     {
       solver.Solve();
       if ( max_sq_error < solver.SolutionPtr(0)->sq_error ) 
       {
 	   max_sq_error = solver.SolutionPtr(0)->sq_error;
-           max_sq_proj_error = solver.AverageSquaredProjectionErrors().at(0);
+           max_sq_proj_error = solver.AverageSquaredProjectionErrors()[0];
       }
       solutions.push_back(*solver.SolutionPtr(0));
     }
@@ -166,11 +171,11 @@ int main()
   {
     double terr, aerr;
 
-    std::cout << i << "-th Solution : " << solutions.at(i);
-    std::cout << i << "-th Rt : " << vRt.at(i) << std::endl;
-    std::cout << i << "-th tt : " << vtt.at(i) << "\n";
+    std::cout << i << "-th Solution : " << solutions[i];
+    std::cout << i << "-th Rt : " << vRt[i] << std::endl;
+    std::cout << i << "-th tt : " << vtt[i] << "\n";
 
-    poseError(solutions.at(i), vRt.at(i), vtt.at(i), terr, aerr);
+    poseError(solutions[i], vRt[i], vtt[i], terr, aerr);
     std::cout << i << " translational error : " << terr <<  "  angular error : " << aerr*180.0/3.14159 << "\n\n";
   }
   
