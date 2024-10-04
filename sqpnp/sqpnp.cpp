@@ -209,6 +209,7 @@ namespace sqpnp
     v[0] = L[6] * L[0];
     v[1] = L[7] * L[4];
     L[8] = A(2, 2) - L[6] * v[0] - L[7] * v[1];
+    if (L[8] < 1E-10) return 3;
 
     // Forward solve L*x = b
     x[0] = b[0];
