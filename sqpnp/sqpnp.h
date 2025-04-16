@@ -36,9 +36,9 @@ namespace sqpnp
     const Eigen::Matrix<double, 9, 9>& Omega() const { return Omega_; }
     const Eigen::Matrix<double, 9, 9>& EigenVectors() const { return U_; }
     const Eigen::Matrix<double, 9, 1>& EigenValues() const { return s_; }
-    const int NullSpaceDimension() const { return num_null_vectors_; }
-    const int NumberOfSolutions() const { return num_solutions_; }
-    const SQPSolution* const SolutionPtr(const int index) const 
+    int NullSpaceDimension() const { return num_null_vectors_; }
+    int NumberOfSolutions() const { return num_solutions_; }
+    const SQPSolution* SolutionPtr(int index) const
     { 
       return index < 0 || index >= num_solutions_ ? nullptr : &solutions_[index]; 
     }
