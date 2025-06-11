@@ -439,7 +439,7 @@ namespace sqpnp
 	if ( cos_v1_x_col + cos_v2_x_col <= min_dot1323)
 	{
 	  index3 = i;
-	  min_dot1323 = cos_v2_x_col + cos_v2_x_col;
+	  min_dot1323 = cos_v1_x_col + cos_v2_x_col;
 	}
       }
     }
