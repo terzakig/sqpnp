@@ -85,7 +85,7 @@ namespace sqpnp
     for (int i = 9 - num_eigen_points; i < 9; i++) 
     {
       // NOTE: No need to scale by sqrt(3) here, but better be there for other computations (i.e., orthogonality test)
-      const Eigen::Matrix<double, 9, 1> e = SQRT3 * Eigen::Map<Eigen::Matrix<double, 9, 1>>( U_.block<9, 1>(0, i).data() );
+      const Eigen::Matrix<double, 9, 1> e = SQRT3 * Eigen::Map<Eigen::Matrix<double, 9, 1>>( U_.col(i).data() );
       double orthogonality_sq_error = OrthogonalityError(e);
       // Find nearest rotation vector
       SQPSolution solution[2];
@@ -116,7 +116,7 @@ namespace sqpnp
     int index, c = 1;
     while ((index = 9 - num_eigen_points - c) > 0 && min_sq_error > 3 * s_[index]) 
     {      
-      const Eigen::Matrix<double, 9, 1> e = Eigen::Map<Eigen::Matrix<double, 9, 1>>( U_.block<9, 1>(0, index).data() );
+      const Eigen::Matrix<double, 9, 1> e = Eigen::Map<Eigen::Matrix<double, 9, 1>>( U_.col(index).data() );
       SQPSolution solution[2];
       
       NearestRotationMatrix( e, solution[0].r );
@@ -345,7 +345,7 @@ namespace sqpnp
     H(3, 4) = r[6] - dot_j5q2*H(3, 1) - dot_j5q4*H(3, 3); H(4, 4) = r[7] - dot_j5q2*H(4, 1) - dot_j5q4*H(4, 3); H(5, 4) = r[8] - dot_j5q2*H(5, 1) - dot_j5q4*H(5, 3);
     H(6, 4) = r[3] - dot_j5q3*H(6, 2); H(7, 4) = r[4] - dot_j5q3*H(7, 2); H(8, 4) = r[5] - dot_j5q3*H(8, 2);
     
-    H.block<9, 1>(0, 4) *= (1.0 / H.col(4).norm());
+    H.col(4).normalize();
    
     K(4, 0) = 0; K(4, 1) = r[6]*H(3, 1) + r[7]*H(4, 1) + r[8]*H(5, 1); K(4, 2) = r[3]*H(6, 2) + r[4]*H(7, 2) + r[5]*H(8, 2);
     K(4, 3) = r[6]*H(3, 3) + r[7]*H(4, 3) + r[8]*H(5, 3); 
@@ -369,7 +369,7 @@ namespace sqpnp
     H(7, 5) = r[1] - dot_j6q3*H(7, 2) - dot_j6q5*H(7, 4); 
     H(8, 5) = r[2] - dot_j6q3*H(8, 2) - dot_j6q5*H(8, 4);
     
-    H.block<9, 1>(0, 5) *= (1.0 / H.col(5).norm());
+    H.col(5).normalize();
     
     K(5, 0) = r[6]*H(0, 0) + r[7]*H(1, 0) + r[8]*H(2, 0); K(5, 1) = 0; K(5, 2) = r[0]*H(6, 2) + r[1]*H(7, 2) + r[2]*H(8, 2);
     K(5, 3) = r[6]*H(0, 3) + r[7]*H(1, 3) + r[8]*H(2, 3); K(5, 4) = r[6]*H(0, 4) + r[7]*H(1, 4) + r[8]*H(2, 4)  +  r[0]*H(6, 4) + r[1]*H(7, 4) + r[2]*H(8, 4);
@@ -404,8 +404,8 @@ namespace sqpnp
 	}
       }
     }
-    const auto& v1 = Pn.block<9, 1>(0, index1);
-    N.block<9, 1>(0, 0) = v1 * ( 1.0 / max_norm1 );
+    const auto& v1 = Pn.col(index1);
+    N.col(0) = v1 * ( 1.0 / max_norm1 );
     col_norms[index1] = -1.0; // mark to avoid use in subsequent loops
     
     for (int i = 0; i < 9; i++)
@@ -422,9 +422,9 @@ namespace sqpnp
 	}
       }
     }
-    const auto& v2 = Pn.block<9, 1>(0, index2);
-    N.block<9, 1>(0, 1) = v2 - v2.dot( N.col(0) ) * N.col(0);
-    N.block<9, 1>(0, 1) *= (1.0 / N.col(1).norm());
+    const auto& v2 = Pn.col(index2);
+    N.col(1) = v2 - v2.dot( N.col(0) ) * N.col(0);
+    N.col(1).normalize();
     col_norms[index2] = -1.0; // mark to avoid use in loop below
     
     for (int i = 0; i < 9; i++)
@@ -445,11 +445,9 @@ namespace sqpnp
     }
     
     // Now orthogonalize the remaining 2 vectors v2, v3 into N
-    const auto& v3 = Pn.block<9, 1>(0, index3);
-    
-    N.block<9, 1>(0, 2) = v3 - ( v3.dot( N.col(1) ) * N.col(1) ) - ( v3.dot( N.col(0) ) * N.col(0) );
-    N.block<9, 1>(0, 2) *= (1.0 / N.col(2).norm());
-    
+    const auto& v3 = Pn.col(index3);
+    N.col(2) = v3 - ( v3.dot( N.col(1) ) * N.col(1) ) - ( v3.dot( N.col(0) ) * N.col(0) );
+    N.col(2).normalize();
   }
   
 }
