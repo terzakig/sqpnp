@@ -67,9 +67,10 @@ namespace sqpnp
     {
       const size_t n = _3dpoints.size();
 
-      if (n !=_projections.size() || n < 3 )
+      if (n != _projections.size() || n < 3 )
       {
         flag_valid_ = false;
+        std::cerr << "SQPnP: Mismatching data vector sizes!\n" << std::flush;
         return;
       }
       
@@ -77,6 +78,7 @@ namespace sqpnp
       {
         if (n != _weights.size() ) {
           flag_valid_ = false;
+          std::cerr << "SQPnP: Invalid weights vector size!\n" << std::flush;
           return;
         }
 

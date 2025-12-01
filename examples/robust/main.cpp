@@ -32,7 +32,7 @@
 /* read matching points from a file and normalize the projections */
 static int readMatchingPoints(char *fname, std::vector<sqpnp::_Projection>& pts2D, std::vector<sqpnp::_Point>& pts3D)
 {
-register int i;
+int i;
 int ncoords, nmatches;
 double X, Y, Z, x, y;
 FILE *fp;
