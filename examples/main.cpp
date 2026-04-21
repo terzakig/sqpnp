@@ -15,8 +15,8 @@ void GenerateSyntheticPoints(int n,
 			     std::vector<cv::Point3_<double>>& points,
 			     std::vector<cv::Point_<double>>& projections,
 			     std::vector<cv::Point_<double>>& noisy_projections,
-			     const double& std_pixel_noise = 0.0,
-			     const double& radius = 3.0 
+			     const double std_pixel_noise = 0.0,
+			     const double radius = 3.0
 			    )
 {
     assert( n > 2);

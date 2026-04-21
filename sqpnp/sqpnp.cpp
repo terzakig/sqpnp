@@ -291,11 +291,11 @@ namespace sqpnp
   // Compute the 3D null space (N) and 6D normal space (H) of the constraint Jacobian at a 9D vector r 
   // (r is not necessarily a rotation but it must represent a rank-3 matrix)
   // NOTE: K is lower-triangular, so upper triangle may contain trash (is not filled by the function)...
-  void PnPSolver::RowAndNullSpace(const Eigen::Matrix<double, 9, 1>& r, 
-				    Eigen::Matrix<double, 9, 6>& H, // Row space 
-				    Eigen::Matrix<double, 9, 3>& N, // Null space
-				    Eigen::Matrix<double, 6, 6>& K,  // J*Q (J - Jacobian of constraints)
-				  const double& norm_threshold // Used to discard columns of Pn when finding null space
+  void PnPSolver::RowAndNullSpace(const Eigen::Matrix<double, 9, 1>& r,
+                                        Eigen::Matrix<double, 9, 6>& H, // Row space
+                                        Eigen::Matrix<double, 9, 3>& N, // Null space
+                                        Eigen::Matrix<double, 6, 6>& K,  // J*Q (J - Jacobian of constraints)
+				  const double norm_threshold // Used to discard columns of Pn when finding null space
  				) // threshold for column vector norm (of Pn)
   {
     // Applying Gram-Schmidt orthogonalization on the Jacobian. 

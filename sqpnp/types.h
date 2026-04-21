@@ -133,16 +133,16 @@ namespace sqpnp
     double equal_squared_errors_diff;
     double point_variance_threshold;
     
-    inline SolverParameters(const double& _rank_tolerance = DEFAULT_RANK_TOLERANCE, 
-			    const double& _sqp_squared_tolerance = DEFAULT_SQP_SQUARED_TOLERANCE,
-			    const double& _sqp_det_threshold = DEFAULT_SQP_DET_THRESHOLD,
-			    const int _sqp_max_iteration = DEFAULT_SQP_MAX_ITERATION, 
-			    const OmegaNullspaceMethod& _omega_nullspace_method = DEFAULT_OMEGA_NULLSPACE_METHOD,
-			    const NearestRotationMethod& _nearest_rotation_method = DEFAULT_NEAREST_ROTATION_METHOD,
-			    const double& _orthogonality_squared_error_threshold = DEFAULT_ORTHOGONALITY_SQUARED_ERROR_THRESHOLD,
-		            const double& _equal_vectors_squared_diff = DEFAULT_EQUAL_VECTORS_SQUARED_DIFF,
-			    const double& _equal_squared_errors_diff = DEFAULT_EQUAL_SQUARED_ERRORS_DIFF,
-			    const double& _point_variance_threshold = DEFAULT_POINT_VARIANCE_THRESHOLD
+    inline SolverParameters(const double _rank_tolerance = DEFAULT_RANK_TOLERANCE,
+			    const double _sqp_squared_tolerance = DEFAULT_SQP_SQUARED_TOLERANCE,
+			    const double _sqp_det_threshold = DEFAULT_SQP_DET_THRESHOLD,
+			    const int _sqp_max_iteration = DEFAULT_SQP_MAX_ITERATION,
+			    const OmegaNullspaceMethod _omega_nullspace_method = DEFAULT_OMEGA_NULLSPACE_METHOD,
+			    const NearestRotationMethod _nearest_rotation_method = DEFAULT_NEAREST_ROTATION_METHOD,
+			    const double _orthogonality_squared_error_threshold = DEFAULT_ORTHOGONALITY_SQUARED_ERROR_THRESHOLD,
+		            const double _equal_vectors_squared_diff = DEFAULT_EQUAL_VECTORS_SQUARED_DIFF,
+			    const double _equal_squared_errors_diff = DEFAULT_EQUAL_SQUARED_ERRORS_DIFF,
+			    const double _point_variance_threshold = DEFAULT_POINT_VARIANCE_THRESHOLD
 			    ) : rank_tolerance(_rank_tolerance),
 				sqp_squared_tolerance(_sqp_squared_tolerance),
 				sqp_det_threshold(_sqp_det_threshold),

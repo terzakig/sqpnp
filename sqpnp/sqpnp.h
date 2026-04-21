@@ -364,9 +364,9 @@ namespace sqpnp
     
     //
     // Invert a 3x3 symmetric matrix (using low triangle values only)
-    inline static bool InvertSymmetric3x3(const Eigen::Matrix<double, 3, 3> Q, 
-					  Eigen::Matrix<double, 3, 3>& Qinv, 
-					  const double& det_threshold = 1e-10
+    inline static bool InvertSymmetric3x3(const Eigen::Matrix<double, 3, 3>& Q,
+					  Eigen::Matrix<double, 3, 3>& Qinv,
+					  const double det_threshold = 1e-10
 					 )
     {
       // 1. Get the elements of the matrix
@@ -559,7 +559,7 @@ namespace sqpnp
 				      Eigen::Matrix<double, 9, 6>& H, 
 				      Eigen::Matrix<double, 9, 3>& N,
 				      Eigen::Matrix<double, 6, 6>& K,
-				const double& norm_threshold = 0.1); 
+				const double norm_threshold = 0.1);
 
   };
 
