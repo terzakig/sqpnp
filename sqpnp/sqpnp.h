@@ -17,10 +17,12 @@
 #ifndef SQPnP_H__
 #define SQPnP_H__
 
-#include "types.h"
 #include <vector>
 #include <assert.h>
 #include <iostream>
+#include <functional>
+
+#include "types.h"
 
 namespace sqpnp
 {
@@ -82,7 +84,7 @@ namespace sqpnp
           return;
         }
 
-        weights_ = _weights;
+        weights_.assign(_weights.begin(), _weights.end());
       }
       else
       {
@@ -108,6 +110,7 @@ namespace sqpnp
       for (size_t i = 0; i < n; i++)
       {
         const double w = weights_[i];
+        assert(w >= 0.0);
         points_.emplace_back( _3dpoints[i] );
         projections_.emplace_back( _projections[i] );
 
@@ -165,6 +168,12 @@ namespace sqpnp
         
         //QA(2, 0) -= wx*X; QA(2, 1) -= wx*Y; QA(2, 2) -= wx*Z;  QA(2, 3) -= wy*X; QA(2, 4) -= wy*Y; QA(2, 5) -= wy*Z;
         QA(2, 6) += wsq_norm_m*X; QA(2, 7) += wsq_norm_m*Y; QA(2, 8) += wsq_norm_m*Z; 
+      }
+      if (sum_w <= 0.0)
+      {
+        flag_valid_ = false;
+        std::cerr << "SQPnP: No data points with w > 0!\n" << std::flush;
+        return;
       }
       // Complete QA
       QA(1, 3) = QA(0, 0); QA(1, 4) = QA(0, 1); QA(1, 5) = QA(0, 2);

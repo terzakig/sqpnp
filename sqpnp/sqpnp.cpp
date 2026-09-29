@@ -75,12 +75,13 @@ namespace sqpnp
   // Solve the PnP 
   bool PnPSolver::Solve()
   {
+    // clear solutions
+    num_solutions_ = 0;
+
     if ( !flag_valid_ ) return false;
   
     double min_sq_error = std::numeric_limits<double>::max();
     int num_eigen_points = num_null_vectors_ > 0 ? num_null_vectors_ : 1;
-    // clear solutions
-    num_solutions_ = 0;
     
     for (int i = 9 - num_eigen_points; i < 9; i++) 
     {
