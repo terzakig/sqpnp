@@ -21,11 +21,8 @@ void GenerateSyntheticPoints(int n,
 {
     assert( n > 2);
     
-    cv::Matx<double, 3,3> K(1400, 0, 1000, 
-			    0, 1400, 900,
-			    0, 0, 1);
-
-    const double std_noise = std_pixel_noise / 1400;
+    const double foc = 1400;
+    const double std_noise = std_pixel_noise / foc;
     const double depth = 7*radius; // depth of the barycenter of the points
     
     const cv::Point3_<double> C(radius / 4, radius / 4, depth );
@@ -147,8 +144,9 @@ int main()
   sqpnp::SolverParameters params;
   params.omega_nullspace_method = sqpnp::OmegaNullspaceMethod::RRQR;
   std::vector<double>weights(n, 1.0);
-  double max_sq_error = 0, max_sq_proj_error = 0;
-  std::vector<sqpnp::SQPSolution> solutions;
+  double max_sq_error = 0.0, max_sq_proj_error = 0.0;
+  std::vector<std::pair<int, sqpnp::SQPSolution>> solutions;
+  solutions.reserve(N);
   for (int i = 0; i < N; i++)
   {
     // example passing weights and parameters to the solver
@@ -158,25 +156,25 @@ int main()
       solver.Solve();
       if ( max_sq_error < solver.SolutionPtr(0)->sq_error ) 
       {
-	   max_sq_error = solver.SolutionPtr(0)->sq_error;
-           max_sq_proj_error = solver.AverageSquaredProjectionErrors()[0];
+	   max_sq_error = std::max(max_sq_error, solver.SolutionPtr(0)->sq_error);
+	   max_sq_proj_error = std::max(max_sq_proj_error, solver.AverageSquaredProjectionErrors()[0]);
       }
-      solutions.push_back(*solver.SolutionPtr(0));
+      solutions.emplace_back(i, *solver.SolutionPtr(0));
     }
   }
   
   auto finish = std::chrono::steady_clock::now();
   
-  for (int i = 0; i < N; i++)
+  for (const auto &[j, solution] : solutions)
   {
     double terr, aerr;
 
-    std::cout << i << "-th Solution : " << solutions[i];
-    std::cout << i << "-th Rt : " << vRt[i] << std::endl;
-    std::cout << i << "-th tt : " << vtt[i] << "\n";
+    std::cout << j << "-th Solution : " << solution;
+    std::cout << j << "-th Rt : " << vRt[j] << std::endl;
+    std::cout << j << "-th tt : " << vtt[j] << "\n";
 
-    poseError(solutions[i], vRt[i], vtt[i], terr, aerr);
-    std::cout << i << " translational error : " << terr <<  "  angular error : " << aerr*180.0/3.14159 << "\n\n";
+    poseError(solution, vRt[j], vtt[j], terr, aerr);
+    std::cout << j << " translational error : " << terr <<  "  angular error : " << aerr*180.0/3.14159 << "\n\n";
   }
   
   auto diff = finish - start;
