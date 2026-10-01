@@ -222,9 +222,7 @@ namespace sqpnp
         // This is slightly less accurate compared to SVD but x2 faster
         Eigen::FullPivHouseholderQR<Eigen::Matrix<double, 9, 9> > rrqr(Omega_);
         U_ = rrqr.matrixQ();
-
-        Eigen::Matrix<double, 9, 9> R = rrqr.matrixQR().template triangularView<Eigen::Upper>();
-        s_ = R.diagonal().array().abs();
+        s_ = rrqr.matrixQR().diagonal().cwiseAbs();
       }
       else if ( parameters_.omega_nullspace_method == OmegaNullspaceMethod::CPRRQR )
       {
@@ -232,9 +230,7 @@ namespace sqpnp
         // This is potentially less accurate compared to RRQR but faster
         Eigen::ColPivHouseholderQR<Eigen::Matrix<double, 9, 9> > cprrqr(Omega_);
         U_ = cprrqr.householderQ();
-
-        Eigen::Matrix<double, 9, 9> R = cprrqr.matrixR().template triangularView<Eigen::Upper>();
-        s_ = R.diagonal().array().abs();
+        s_ = cprrqr.matrixQR().diagonal().cwiseAbs();
       }
       else // if ( parameters_.omega_nullspace_method == OmegaNullspaceMethod::SVD )
       {
