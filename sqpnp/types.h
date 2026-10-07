@@ -106,7 +106,7 @@ namespace sqpnp
 
   };
   
-  enum class OmegaNullspaceMethod { RRQR, CPRRQR, SVD };
+  enum class OmegaNullspaceMethod { RRQR, CPRRQR, EIG, SVD };
   enum class NearestRotationMethod { FOAM, SVD };
   
   struct SolverParameters

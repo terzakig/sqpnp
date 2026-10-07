@@ -232,6 +232,14 @@ namespace sqpnp
         U_ = cprrqr.householderQ();
         s_ = cprrqr.matrixQR().diagonal().cwiseAbs();
       }
+      else if ( parameters_.omega_nullspace_method == OmegaNullspaceMethod::EIG )
+      {
+        // Symmetric eigen-decomposition; eigenvalues are in ascending order and must be reversed.
+        // This is more accurate than RRQR but slower
+        Eigen::SelfAdjointEigenSolver<Eigen::Matrix<double, 9, 9>> es(Omega_);
+        U_ = es.eigenvectors().rowwise().reverse();
+        s_ = es.eigenvalues().reverse().cwiseAbs();
+      }
       else // if ( parameters_.omega_nullspace_method == OmegaNullspaceMethod::SVD )
       {
         // SVD-based nullspace computation. This is the most accurate but slowest option
