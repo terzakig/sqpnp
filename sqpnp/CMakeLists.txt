@@ -1,7 +1,6 @@
 add_library(SQPnP sqpnp.cpp)
 
-set(CXX_FLAGS "-Wall")
-set(CMAKE_CXX_FLAGS "${CXX_FLAGS}")
+target_compile_options(SQPnP PRIVATE -Wall)
 
 set(INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR})
 

@@ -95,6 +95,7 @@ namespace sqpnp
       if ( orthogonality_sq_error < parameters_.orthogonality_squared_error_threshold ) 
       {
 	 solution[0].r_hat = Determinant9x1(e) * e;
+	 solution[0].r = solution[0].r_hat;
 	 solution[0].t = P_*solution[0].r_hat;
 	 solution[0].num_iterations = 0;
 	 

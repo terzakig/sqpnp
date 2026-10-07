@@ -1,4 +1,6 @@
 #include <iostream>
+#include <algorithm>
+#include <utility>
 #include <cmath>
 #include <sqpnp.h>
 #include <opencv2/core.hpp>
@@ -145,7 +147,7 @@ int main()
   params.omega_nullspace_method = sqpnp::OmegaNullspaceMethod::RRQR;
   std::vector<double>weights(n, 1.0);
   double max_sq_error = 0.0, max_sq_proj_error = 0.0;
-  std::vector<std::pair<int, sqpnp::SQPSolution>> solutions;
+  std::vector<std::pair<int, sqpnp::SQPSolution>> solutions; // (run index, solution)
   solutions.reserve(N);
   for (int i = 0; i < N; i++)
   {
@@ -154,12 +156,12 @@ int main()
     if ( solver.IsValid() )
     {
       solver.Solve();
-      if ( max_sq_error < solver.SolutionPtr(0)->sq_error ) 
+      if ( solver.NumberOfSolutions() > 0 )
       {
 	   max_sq_error = std::max(max_sq_error, solver.SolutionPtr(0)->sq_error);
 	   max_sq_proj_error = std::max(max_sq_proj_error, solver.AverageSquaredProjectionErrors()[0]);
+	   solutions.emplace_back(i, *solver.SolutionPtr(0));
       }
-      solutions.emplace_back(i, *solver.SolutionPtr(0));
     }
   }
   
